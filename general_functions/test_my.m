@@ -2,7 +2,7 @@
 %    The purpose of this function is to provide a joint interface for the
 %    cv structures I introduced. 
 %
-%    FOLDSELEC = TRAINING (CV, I) returns a binary vector with the length
+%    FOLDSELEC = TEST_MY (CV, I) returns a binary vector with the length
 %    equal to the number of examples in fold I defined in CV.
 %
 %    INPUTS:
@@ -22,7 +22,7 @@
 %                   value of each element j indicates whether example j is
 %                   part of the test (true) or not (false).
 %
-%    See also GETCVINDICES, CVPARTITION and TRAINING.
+%    See also GETCVINDICES, CVPARTITION and TRAINING_MY.
 function foldSelec = test_my (cv, i)
     if (nargin < 2)
         error ('test_my:InvalidArgument', 'Not enough input arguments.');

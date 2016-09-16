@@ -39,7 +39,9 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
 %
 %======================================================
     [d,n_train] = size(Y_train);
-      
+    
+    n_kx = length(KX_train_list); % number of input kernels
+    
     % Training output feature vectors
     mean_Y_train = mean(Y_train,2);
     Psi_train = norma(Y_train, mean_Y_train, mp_iokr_param.center);
@@ -102,8 +104,7 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
             
             clear stats_cv;
         else
-            assert (Y_C_train.getNumberOfExamples() == numel (train_set_cv_logical), 'Upps?!')
-            assert (Y_C_train.getNumberOfExamples() == numel (test_set_cv_logical), 'Upps?!')
+            assert (Y_C_train.getNumberOfExamples() == numel )
             
             Y_C_train_cv = Y_C_train.getSubset (train_set_cv);
             Y_C_test_cv = Y_C_train.getSubset (test_set_cv);

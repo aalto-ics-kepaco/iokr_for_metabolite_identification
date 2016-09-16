@@ -19,13 +19,13 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
 %
 %======================================================
 
-    n_train = length(Y_C_train);
+    n_train = Y_C_train.getNumberOfExamples();
         
-    d = size(Y_C_train{1},1);
+    d = size (Y_C_train.getCandidateSet (1, 0, 'data'), 1);
     Mean_Psi_C_train = zeros(d,n_train);
     Cov_Psi_C_train = zeros(d,d);
     for j = 1:n_train
-        Y_Cj = Y_C_train{j};
+        Y_Cj = Y_C_train.getCandidateSet(j, 1, 'data');
         nj = size(Y_Cj,2);
 
         % centering and normalization of the feature vectors

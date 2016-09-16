@@ -2,7 +2,7 @@
 %    The purpose of this function is to provide a joint interface for the
 %    cv structures I introduced.
 %
-%    FOLDSELEC = TRAINING (CV, I) returns a binary vector with the length
+%    FOLDSELEC = TRAINING_MY (CV, I) returns a binary vector with the length
 %    equal to the number of examples in fold I defined in CV.
 %
 %    INPUTS:

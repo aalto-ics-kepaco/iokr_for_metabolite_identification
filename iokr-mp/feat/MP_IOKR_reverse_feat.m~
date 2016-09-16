@@ -92,12 +92,15 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     
     % Training the MP-IOKR model
     if (data_param.usePreCalcStat)
-        stats = data_param.statMatObj.stats;
+        stats = data_param.statMatObj.stats_cv(i, 1);
             
         % Train
-        Mean_Psi_C_train = stats.Mean_Psi_C_train;
-        Cov_Psi_C_train = stast.Cov_Psi_C_train;
-        
+        Mean_Psi_C_train_cv = stats.Mean_Psi_C_train_cv;
+        Cov_Psi_C_train_cv = stast.Cov_Psi_C_train_cv;
+        % Test
+        Mean_Psi_C_test_cv = stats.Mean_Psi_C_test_cv;
+        Cov_Psi_C_test_cv = stast.Cov_Psi_C_test_cv;
+
         clear stats;
     else
         [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, mean_Y_train, mp_iokr_param.center);

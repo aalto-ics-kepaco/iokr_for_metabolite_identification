@@ -17,14 +17,14 @@
 %    INPUTS
 %       cvParam             Parameter structure to build up the nested-cv.
 %    * Example 1:
-%       struct ('nTrain', nTrain, ...
+%       struct ('nObservations', nObservations, ...
 %               'outer', struct ('type, 'random',   ...
 %                                'nFolds', nFolds), ... 
 %               'inner', struct ('nFolds', nFolds)
 %
 %       Outer and inner folds are chosen randomly. The number of outer and
-%       inner folds must be provided as well as the number of training
-%       examples NTRAIN.
+%       inner folds must be provided as well as the number of examples 
+%       NOBSERVATIONS.
 %
 %    * Example 2:
 %       struct ('outer', struct ('type', 'fixed',  ... 
@@ -56,7 +56,8 @@
 %                                           matrix. (:, i) corresponds to
 %                                           the selection of the test
 %                                           examples for outer fold i.
-%             * inner: Object of class cvpartition.
+%             * inner: (nOuterFolds x 1) cell array containing objects of 
+%                      class cvpartition.
 %
 %    NOTE: The class cvpartitions cannot work with pre-defined cv-folds.
 %          However, to provide the following functionalities:
@@ -64,11 +65,11 @@
 %          foldSelec = training (cv, i)
 %          foldSelec = test (cv, i)
 %           
-%          The TRAINING and TEST functions has been covered by local 
-%          implementations. See training.m and test.m in the directory
-%          containing this file. 
+%          The functions TRAINING_MY and TEST_MY has been implemented.
+%          Those function can work with object of class cvpartition and
+%          simple structures created by this function.
 %
-%    See also CVPARTITION, TRAINING and TEST.
+%    See also CVPARTITION, TRAINING_MY and TEST_MY.
 function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
     if (nargin < 1)
         error ('getCVIndices:InvalidArgument', ...
@@ -103,13 +104,13 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
             case 'random'
                 nFoldsOuter = cvParam.outer.nFolds;
                 nFoldsInner = cvParam.inner.nFolds;                
-                nTrain = cvParam.nTrain;
+                nObservations = cvParam.nObservations;
                 
                 cv = struct ('outer', {}, 'inner', {});
                 if (nFoldsOuter > 1)
-                    cv(1).outer = cvpartition (nTrain, 'KFold', nFoldsOuter);
+                    cv(1).outer = cvpartition (nObservations, 'KFold', nFoldsOuter);
                 else
-                    cv(1).outer = cvpartition (nTrain, 'Resubstitution');
+                    cv(1).outer = cvpartition (nObservations, 'Resubstitution');
                 end % if
                 cv.inner = cell (nFoldsOuter, 1);
                 for i = 1:nFoldsOuter
@@ -118,11 +119,12 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
             case 'fixed'
                 nFoldsOuter = numel (unique (cvParam.outer.cvInd));
                 nFoldsInner = cvParam.inner.nFolds;                
-                nTrain = numel (cvParam.outer.cvInd);
+                nObservations = numel (cvParam.outer.cvInd);
                 
                 cv = struct ( ...
-                    'outer', struct ('training', false (nTrain, nFoldsOuter), ...
-                                     'test', false (nTrain, nFoldsOuter)),    ...
+                    'outer', struct ('training', false (nObservations, nFoldsOuter), ...
+                                     'test', false (nObservations, nFoldsOuter),     ...
+                                     'NumTestSets', nFoldsOuter),             ...
                     'inner', {cell(nFoldsOuter, 1)});
                 for i = 1:nFoldsOuter 
                     cv.outer.test(:, i)     = (cvParam.outer.cvInd == i);

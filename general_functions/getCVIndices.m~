@@ -1,4 +1,3 @@
-function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
 %% GETCVINDICES Function which pre-computes the train/test indices for CV
 %    cv = GETCVINDICES (CVPARAM) creates a partition according to the 
 %    cross-validation setting CVPARAM.
@@ -17,29 +16,20 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
 % 
 %    INPUTS
 %       cvParam             Parameter structure to build up the nested-cv.
-%    * Example 1.1:
-%       cvParam = struct ('nObservations', nObservations, ...
-%                   'outer', struct ('type, 'random',     ...
-%                                    'nFolds', nFolds),   ... 
-%                   'inner', struct ('nFolds', nFolds))
+%    * Example 1:
+%       struct ('nObservations', nObservations, ...
+%               'outer', struct ('type, 'random',   ...
+%                                'nFolds', nFolds), ... 
+%               'inner', struct ('nFolds', nFolds)
 %
 %       Outer and inner folds are chosen randomly. The number of outer and
 %       inner folds must be provided as well as the number of examples 
 %       NOBSERVATIONS.
 %
-%    * Example 1.2:
-%       cvParam = struct ('nObservations', nObservations, ...
-%                   'outer', struct ('type, 'random',     ...
-%                                    'nFolds', nFolds))
-% 
-%       Same as example 1.1, but no inner cross-validation folds will be
-%       created.
-%
-%    * Example 2.1:
-%       cvParam = struct (                            ...
-%                   'outer', struct ('type', 'fixed', ... 
-%                                    'cvInd', cvInd), ... 
-%                   'inner', struct ('nFolds', nFolds))
+%    * Example 2:
+%       struct ('outer', struct ('type', 'fixed',  ... 
+%                                'cvInd', cvInd)), ... 
+%               'inner', struct ('nFolds', nFolds))
 %
 %       Outer folds are fixed using a vector of fold indices. The number of
 %       outer folds is determined using 'numel (unique (cvInd))' and the
@@ -48,18 +38,12 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
 %       folds are chosen randomly and the number of inner folds should be
 %       provided.
 %
-%    * Example 2.2:
-%       cvParam = struct (                            ...
-%                   'outer', struct ('type', 'fixed', ... 
-%                                    'cvInd', cvInd))
-%
 %       directory           Output/input directory to store/load the
 %                           candidate selection.
 %       overwrite           Binary indicating whether an exsiting partition
 %                           should be overwritten.
-%
-%       Same as example 2.1, but no inner cross-validation folds will be
-%       created.
+%    * Example 3:
+%       struct ('')
 %
 %    OUTPUTS:
 %       cv    Struct with the following structure:
@@ -74,24 +58,21 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
 %                                           matrix. (:, i) corresponds to
 %                                           the selection of the test
 %                                           examples for outer fold i.
-%             If requested by provided PARAM.INNER structure. 
 %             * inner: (nOuterFolds x 1) cell array containing objects of 
 %                      class cvpartition.
 %
 %    NOTE: The class cvpartitions cannot work with pre-defined cv-folds.
 %          However, to provide the following functionalities:
 %
-%          foldSelec = training_my (cv.outer, i)
-%          foldSelec = test_my (cv.outer, i)
-%
-%          foldSelec = training_my (cv.inner{i}, j)
-%          foldSelec = test_my (cv.inner{i}, j)
+%          foldSelec = training (cv, i)
+%          foldSelec = test (cv, i)
 %           
 %          The functions TRAINING_MY and TEST_MY has been implemented.
 %          Those function can work with object of class cvpartition and
 %          simple structures created by this function.
 %
 %    See also CVPARTITION, TRAINING_MY and TEST_MY.
+function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
     if (nargin < 1)
         error ('getCVIndices:InvalidArgument', ...
             'Not enough arguments.');

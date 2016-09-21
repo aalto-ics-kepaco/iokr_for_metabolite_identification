@@ -17,14 +17,15 @@ function [ score ] = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, ker
 %                   for the candidates of the test example j
 %
 %======================================================
-
-    n_test = length(Y_C_test);
+    n_test = Y_C_test.getNumberOfExamples();
     
     % Pre-image
     score = cell(n_test,1);
     for j = 1:n_test
-        Psi_Cj = norma(Y_C_test{j}, mean_Y_train, ker_center); %  centering and normalization
+        Y_Cj = Y_C_test.getCandidateSet (j, 0, 'data');
+        assert (~ isnan (Y_Cj), 'For each test example there should be a training set.');
+        
+        Psi_Cj = norma(Y_Cj, mean_Y_train, ker_center); %  centering and normalization
         score{j} = Psi_pred(:,j)' * Psi_Cj;         
     end
-
 end

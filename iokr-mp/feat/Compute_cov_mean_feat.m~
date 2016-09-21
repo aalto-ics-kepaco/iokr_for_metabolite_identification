@@ -26,13 +26,10 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
     Cov_Psi_C_train = zeros(d,d);
     for j = 1:n_train
         Y_Cj = Y_C_train.getCandidateSet(j, 1, 'data');       
-        if (isnan (Y_Cj))
-            % No candidate set for the desired example available. 
-            warning ('No candidate set for desired example.');
-            continue;
-        end % if
-       
+        assert (~ isnan (Y_))
+        
         nj = size(Y_Cj,2);
+        
         if (nj == 0)
             % If a candidate set does not contain any candidate no mean and
             % no covariance matrice needs to be calculated.

@@ -358,7 +358,7 @@ classdef CandidateSets < handle
         %       candSet_id = Y_c.getElement(id); 
         %       fp         = Y_c.getElement(id, 0, 'data'); 
         %
-        %    See also GETSUBSETOFCANDIDATES     
+        %    See also GETCANDIDATESELECTION     
         
             % Check input
             if (isempty (id));         lhs = {};  return; end % if
@@ -502,16 +502,17 @@ classdef CandidateSets < handle
                 idx, 0, CandidateSets.candidateSetFieldnames.identifier);
             
             selec = strcmp (identifiersOfCandidates, identifier{1});
+            
             if (sum (selec) > 1)
                 warning ('The identifier in the candidate set corresponding to example %d are not all unique.', ...
                     idx);
+            end % if
                 
-                identifierIdx = find (selec, 1); % find (X, K) ... 'K' first
-                selec = false (size (selec));
-                selec(identifierIdx) = true;
-                
-                assert (sum (selec) < 2, 'Upps?! There should be only one "true" in the selection.');
-            end % if    
+            identifierIdx = find (selec, 1); % find (X, K) ... 'K' first
+            selec = false (size (selec));
+            selec(identifierIdx) = true;
+
+            assert (sum (selec) < 2, 'Upps?! There should be only one "true" in the selection.');
         end % if
         
         function isEqual = eq (obj1, obj2)

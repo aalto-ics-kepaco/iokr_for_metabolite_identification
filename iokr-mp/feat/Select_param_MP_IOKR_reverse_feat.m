@@ -58,23 +58,19 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
     end % if
     
     e = zeros(length(opt_param.val_lambda), n_folds);
-    for i = 1:n_folds
-        
-        % Defining training and test sets
-        train_set_cv_logical = training_my(c,i);
-        test_set_cv_logical = test_my(c,i);
-        
+    for i = 1:n_folds       
+        % Defining training and test sets       
         % Insert some assertions to prevent problems with pre-calulated
         % data. Can be removed later.
-        assert (numel (train_set_cv_logical) == size (KX_train_list{1}, 1), ...
+        assert (numel (training_my(c,i)) == size (KX_train_list{1}, 1), ...
             'Upps?!: Lenght of the binary training selection vector should match the dimension of the kernel. usePreCalcStat = %d', ...
             data_param.usePreCalcData);
-        assert (numel (test_set_cv_logical) == size (KX_train_list{1}, 1), ...
+        assert (numel (test_my(c,i)) == size (KX_train_list{1}, 1), ...
             'Upps?!: Lenght of the binary test selection vector should match the dimension of the kernel. usePreCalcStat = %d', ...
             data_param.usePreCalcData);
         
-        train_set_cv = find(train_set_cv_logical);        
-        test_set_cv = find(test_set_cv_logical);
+        train_set_cv = find(training_my(c,i));        
+        test_set_cv = find(test_my(c,i));
         
         KX_train_cv_list = cellfun(@(x) x(train_set_cv,train_set_cv), KX_train_list, 'UniformOutput', false);
         KX_train_test_cv_list = cellfun(@(x) x(train_set_cv,test_set_cv), KX_train_list, 'UniformOutput', false);
@@ -127,6 +123,5 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
     end
     [~, ind_lambda_opt] = min(mean(e,2));
     lambda_opt = opt_param.val_lambda(ind_lambda_opt);
-
 end
 

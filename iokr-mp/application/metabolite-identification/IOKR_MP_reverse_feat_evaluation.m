@@ -95,6 +95,12 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
             if (~ isnan (inchis_c)) ; continue ; end % if
             
             [~ , IX] = sort (scores{j}, 'descend');
+            
+            % FIXME: The index j is not correct here! The index should be
+            % with respect to ALL the examples. Compare also the size of
+            % "ranks".
+            assert (0, 'FIXME');
+            
             ranks(j) = find (strcmp (inchis_c(IX), inchis_test{j}));
         end % for
     end % for

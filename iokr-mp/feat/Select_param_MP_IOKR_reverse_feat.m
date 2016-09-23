@@ -51,7 +51,7 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
     % cross-validation experiment
     if (data_param.usePreCalcData)
         n_folds = data_param.cv.NumTestTests;
-        c = opt_param.cv;
+        c = data_param.cv;
     else
         n_folds = 10;
         c = cvpartition(n_train, 'k', n_folds);
@@ -87,14 +87,14 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
         % Compute the mean and covariance of the candidate output feature
         % vectors
         if (data_param.usePreCalcData) 
-            stats_cv = data_param.statMatObj.stats_cv(i, 1);
+            stats_cv = data_param.stats_cv(1, i);
             
             % Train
             Mean_Psi_C_train_cv = stats_cv.Mean_Psi_C_train_cv;
-            Cov_Psi_C_train_cv = stast.Cov_Psi_C_train_cv;
+            Cov_Psi_C_train_cv = stast_cv.Cov_Psi_C_train_cv;
             % Test
             Mean_Psi_C_test_cv = stats_cv.Mean_Psi_C_test_cv;
-            Cov_Psi_C_test_cv = stast.Cov_Psi_C_test_cv;
+            Cov_Psi_C_test_cv = stast_cv.Cov_Psi_C_test_cv;
             
             clear stats_cv;
         else

@@ -190,22 +190,6 @@ classdef CandidateSets < handle
         end % function
     end % methods
     
-    methods (Access = private)
-        function selec = createSelectionOfAllCandidates (obj)
-        %% CREATESELECTIONOFALLCANDIDATES creates a selection of all candidates
-            selec = cell (size (obj.lut_));
-                
-            for i = 1:numel (obj.lut_)
-                if (~ isnan (obj.lut_(i)))
-                    selec{i} = true (...
-                        1, obj.data_handle_.data_(obj.lut_(i)).(CandidateSets.candidateSetFieldnames.numberOfElements));
-                else
-                    selec{i} = NaN;
-                end % if
-            end % for
-        end % function
-    end % methods
-    
     methods (Access = public)
         function obj = CandidateSets (data_handle, lut, selec)
         %% CANDIDATESETS Constructor of the class
@@ -514,6 +498,20 @@ classdef CandidateSets < handle
 
             assert (sum (selec) < 2, 'Upps?! There should be only one "true" in the selection.');
         end % if
+        
+        function selec = createSelectionOfAllCandidates (obj)
+        %% CREATESELECTIONOFALLCANDIDATES creates a selection of all candidates
+            selec = cell (size (obj.lut_));
+                
+            for i = 1:numel (obj.lut_)
+                if (~ isnan (obj.lut_(i)))
+                    selec{i} = true (...
+                        1, obj.data_handle_.data_(obj.lut_(i)).(CandidateSets.candidateSetFieldnames.numberOfElements));
+                else
+                    selec{i} = NaN;
+                end % if
+            end % for
+        end % function
         
         function isEqual = eq (obj1, obj2)
         %% ISEQUAL returns true if two CanidateSets objects are equal.

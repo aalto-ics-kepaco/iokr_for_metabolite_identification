@@ -18,7 +18,7 @@ function Kn = normmat( K, D1, D2 )
             D = diag(K);
             Kn = K ./ sqrt(D * D');
         else
-            disp('The function requires 3 arguments')
+            assert ('The function requires 3 arguments')
         end
     else
         Kn = K ./ sqrt(D1 * D2');

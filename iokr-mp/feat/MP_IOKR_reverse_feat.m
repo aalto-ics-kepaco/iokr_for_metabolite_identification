@@ -43,7 +43,7 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
 %                               parameter selection 
 %                               This overwrites DATA_PARAM.TRAIN_SET and 
 %                               DATA_PARAM.TEST_SET
-%   data_param.statsMatObj      Object of class matlab.io.MatFile storing
+%   data_param.stats      Object of class matlab.io.MatFile storing
 %                               the statistics of the candidate sets for
 %                               corresponding to each fold. 
 %
@@ -99,8 +99,8 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     
     % Training the MP-IOKR model
     if (data_param.usePreCalcStat)
-        stats = data_param.statMatObj.stats;
-            
+        stats = data_param.stats;
+        
         % Train
         Mean_Psi_C_train = stats.Mean_Psi_C_train;
         Cov_Psi_C_train = stast.Cov_Psi_C_train;

@@ -1,0 +1,4 @@
+% The function DataHash has been developed by Jan Simon and published on 
+% Matlab's file exchange web-page:
+%
+% https://se.mathworks.com/matlabcentral/fileexchange/31272-datahash/content/DataHash.m

@@ -144,7 +144,7 @@ function [isValid, errStr] = validateIdStructure (id, candidateSets)
     isValid = true;
     errStr = '';
     
-    if (~ all (size (id) > 1))
+    if (all (size (id) > 1))
         isValid = false;
         errStr = 'Identifier must be provided in a vector.';
         
@@ -160,8 +160,8 @@ end % function
 
 % Function to validate the param-structure
 function [isValid, errStr] = validateParamStructure (param)
-    requieredFields = {'strategy', 'inclExpCand', 'perc'};
-    validFields = struct ('strategy', {{'all', 'random'}});
+    requieredFields = {'strategy', 'inclExpCand'};
+    %validFields = struct ('strategy', {{'all', 'random'}});
 
     isValid = true;
     errStr = '';
@@ -174,26 +174,36 @@ function [isValid, errStr] = validateParamStructure (param)
         return;
     end % if
     
-    for fn = requieredFields
-        switch fn{1}
-            case 'strategy'
-                if (~ ismember (param.(fn{1}), validFields.strategy))
-                    isValid = false;
-                    errStr = sprintf ('Only the following selection strategies are valid: %s\n', ...
-                        sprintf ('%s, ', validFields.strategy));
-                    
-                    return;
-                end % if
-            case 'inclExpCand'
-                if (~ islogical (param.(fn{1})))
-                    isValid = false;
-                    errStr = sprintf ('"param.inclExpCand" must be a logical. Provided class = %s.', ...
-                        class (param.(fn{1})));
-                    
-                    return;
-                end % if
-        end % switch
-    end % for
+    switch (param.strategy)
+        case 'random'
+            if (~ (ismember ('perc', fieldnames (param))))
+                isValid = false;
+                errStr = 'If the selection strategy is random, than parameter structure must contain the field "perc"';
+                
+                return;
+            end % if
+    end % switch
+    
+%    for fn = requieredFields
+%        switch fn{1}
+%            case 'strategy'
+%                if (~ ismember (param.(fn{1}), validFields.strategy))
+%                    isValid = false;
+%                    errStr = sprintf ('Only the following selection strategies are valid: %s\n', ...
+%                        sprintf ('%s, ', validFields.strategy));
+%                    
+%                    return;
+%                end % if
+%            case 'inclExpCand'
+%                if (~ islogical (param.(fn{1})))
+%                    isValid = false;
+%                    errStr = sprintf ('"param.inclExpCand" must be a logical. Provided class = %s.', ...
+%                        class (param.(fn{1})));
+%                    
+%                    return;
+%                end % if
+%        end % switch
+%    end % for
 end % function
 
 % Function to validate the working-directory

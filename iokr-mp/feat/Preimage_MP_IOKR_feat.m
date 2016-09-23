@@ -1,4 +1,4 @@
-function [ score ] = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, ker_center)
+function [ scores ] = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, ker_center)
 %======================================================
 % DESCRIPTION:
 % Preimage of MP-IOKR with reverse IOKR in the case of a feature
@@ -20,12 +20,19 @@ function [ score ] = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, ker
     n_test = Y_C_test.getNumberOfExamples();
     
     % Pre-image
-    score = cell(n_test,1);
+    scores = cell(n_test,1);
     for j = 1:n_test
         Y_Cj = Y_C_test.getCandidateSet (j, 0, 'data');
-        assert (~ isnan (Y_Cj), 'For each test example there should be a training set.');
-        
+        if (any (any (isnan (Y_Cj))))
+            % No candidate set for the desired example available. 
+            warning ('No candidate set for desired example.');
+            
+            scores{j} = NaN;
+            
+            continue;
+        end % if
+             
         Psi_Cj = norma(Y_Cj, mean_Y_train, ker_center); %  centering and normalization
-        score{j} = Psi_pred(:,j)' * Psi_Cj;         
+        scores{j} = Psi_pred(:,j)' * Psi_Cj;         
     end
 end

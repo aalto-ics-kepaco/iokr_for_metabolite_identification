@@ -49,25 +49,26 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
     
     % Selection of the regularization parameter of MP-IOKR using an inner
     % cross-validation experiment
-    if (data_param.usePreCalcData)
+    if (data_param.usePreCalcStat)
         n_folds = data_param.cv.NumTestTests;
         c = data_param.cv;
     else
-        n_folds = 10;
+        n_folds = opt_param.nInnerFolds;
         c = cvpartition(n_train, 'k', n_folds);
     end % if
     
     e = zeros(length(opt_param.val_lambda), n_folds);
-    for i = 1:n_folds       
+    for i = 1:n_folds     
+        disp (['Fold ' , num2str(i)]);
         % Defining training and test sets       
         % Insert some assertions to prevent problems with pre-calulated
         % data. Can be removed later.
         assert (numel (training_my(c,i)) == size (KX_train_list{1}, 1), ...
             'Upps?!: Lenght of the binary training selection vector should match the dimension of the kernel. usePreCalcStat = %d', ...
-            data_param.usePreCalcData);
+            data_param.usePreCalcStat);
         assert (numel (test_my(c,i)) == size (KX_train_list{1}, 1), ...
             'Upps?!: Lenght of the binary test selection vector should match the dimension of the kernel. usePreCalcStat = %d', ...
-            data_param.usePreCalcData);
+            data_param.usePreCalcStat);
         
         train_set_cv = find(training_my(c,i));        
         test_set_cv = find(test_my(c,i));
@@ -86,7 +87,7 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
              
         % Compute the mean and covariance of the candidate output feature
         % vectors
-        if (data_param.usePreCalcData) 
+        if (data_param.usePreCalcStat) 
             stats_cv = data_param.stats_cv(1, i);
             
             % Train
@@ -98,8 +99,8 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
             
             clear stats_cv;
         else
-            assert (Y_C_train.getNumberOfExamples() == numel (train_set_cv_logical), 'Upps?!')
-            assert (Y_C_train.getNumberOfExamples() == numel (test_set_cv_logical), 'Upps?!')
+            assert (Y_C_train.getNumberOfExamples() == numel (training_my(c,i)), 'Upps?!')
+            assert (Y_C_train.getNumberOfExamples() == numel (test_my(c,i)), 'Upps?!')
             
             Y_C_train_cv = Y_C_train.getSubset (train_set_cv);
             Y_C_test_cv = Y_C_train.getSubset (test_set_cv);
@@ -115,6 +116,7 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
             C_cv = Train_MP_IOKR_reverse_feat(KX_train_cv_list, Psi_train_cv, M_cv, Mean_Psi_C_train_cv, Cov_Psi_C_train_cv, lambda);
             
             % Computation of the MP-error
+            KX_train_cv = blkdiag (KX_train_cv_list{:});
             P = C_cv*KX_train_cv*M_cv;
             e(j,i) = norm((C_cv*KX_train_test_cv - P*Mean_Psi_C_test_cv) - (Psi_test_cv - Mean_Psi_C_test_cv),'fro')...
                 + trace((P - eye(d))*Cov_Psi_C_test_cv*(P - eye(d))');

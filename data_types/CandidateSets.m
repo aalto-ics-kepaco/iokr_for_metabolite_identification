@@ -285,12 +285,20 @@ classdef CandidateSets < handle
         %    TODO: 
         %       * Allow also logical indices to get a subset of the
         %         candidates.
-            if (any (ids < 1) || any (ids > numel (rhs.lut_)))
-                errorStr = 'Index out of bounds';
-                if (isempty (rhs.lut_))
-                    errorStr = strcat (errorStr, ': LUT is empty.');
+            if (islogical (ids))
+                if (numel (ids) ~= numel (rhs.lut_) ...
+                    || numel (ids) ~= numel (rhs.selec_))
+                    error ('CandidateSets:getSubset:OutOfRange', ...
+                        'Logical index-vector does not match the dimension of "lut" and "selec".');
                 end % if
-                error ('CandidateSets:getSubset:OutOfRange', errorStr);
+            else
+                if (any (ids < 1) || any (ids > numel (rhs.lut_)))
+                    errorStr = 'Index out of bounds';
+                    if (isempty (rhs.lut_))
+                        errorStr = strcat (errorStr, ': LUT is empty.');
+                    end % if
+                    error ('CandidateSets:getSubset:OutOfRange', errorStr);
+                end % if
             end % if
             
             lhs = CandidateSets (rhs.data_handle_, rhs.lut_(ids), rhs.selec_(ids));

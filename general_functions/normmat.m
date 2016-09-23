@@ -14,12 +14,12 @@ function Kn = normmat( K, D1, D2 )
 %======================================================
 
     if nargin == 1 
-        if isequal(K,K') % symmetric matrix (X1 = X2)
+%         if isequal(K,K') % symmetric matrix (X1 = X2)
             D = diag(K);
             Kn = K ./ sqrt(D * D');
-        else
-            assert ('The function requires 3 arguments')
-        end
+%         else
+%             assert ('The function requires 3 arguments')
+%         end
     else
         Kn = K ./ sqrt(D1 * D2');
     end

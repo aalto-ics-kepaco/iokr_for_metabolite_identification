@@ -43,6 +43,9 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     % Set the defaults values for the parameter in PARAM if needed.
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});
     
+    if (param.debug_param.isDebugMode)
+        rng (123);
+    end % if
     %% Load data 
     % ... input-kernels for the training examples
     [KX_list, param] = loadInputKernelsIntoList (inputDir, param);
@@ -73,12 +76,27 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         mf_corres = mf_corres(param.debug_param.debug_set);
     end % if
     tic;
-    cand = load (strcat (inputDir, '/candidates/GNPS_cand_as_struct_transp.mat'));
+    if (param.debug_param.isDebugMode)
+        cand = param.debug_param.cand_struct; 
+    else
+        cand = load (strcat (inputDir, '/candidates/GNPS_cand_as_struct_transp.mat'));
+        cand = cand.cand_struct;
+    end 
     toc;
-    cand = cand.cand_struct;
     Y_C = CandidateSets (DataHandle (cand), mf_corres);
     
-    clear cand mf_corres;
+    if (param.debug_param.isDebugMode)
+        ind_eval = load (strcat (inputDir, '/candidates/ind_eval.txt'));
+        eval_set = false (4138, 1);
+        eval_set(ind_eval) = true;
+        eval_set = eval_set(param.debug_param.debug_set);
+    else
+        ind_eval = load (strcat (inputDir, '/candidates/ind_eval.txt'));
+        eval_set = false (numel (mf_corres), 1);
+        eval_set(ind_eval) = true;
+    end % if
+    
+    clear cand;
       
     assert (Y_C.getNumberOfExamples() == size (Y, 2), ...
         'The number of examples in the associated with the candidate sets is different from the number of example fingerprint vectors.');
@@ -199,6 +217,10 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     
     nOuterFolds = param.data_param.cv.outer.NumTestSets;
     for i = 1:nOuterFolds
+%     for i = 9
+        fprintf ('Fold %d\n', i);
+        
+        
         data_param_fold = struct();
         data_param_fold.train_set = training_my (param.data_param.cv.outer, i);
         data_param_fold.test_set  = test_my (param.data_param.cv.outer, i);
@@ -213,22 +235,48 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
             stats_cv                 = param.data_param.statsMatObj.stats_cv(i, :);
             data_param_fold.stats_cv = stats_cv{1};
         end % if
+        
+%         assert (~ any (isnan (mf_corres (data_param_fold.test_set))))
+%         
+%         continue;
           
         scores = MP_IOKR_reverse_feat (KX_list, Y(:, data_param_fold.train_set), Y_C, ...
             param.opt_param, param.mp_iokr_param, data_param_fold);
         
         % Computation of the ranks of the test examples
-        Y_C_test    = Y_C.getSubset (data_param_fold.test_set);
-        inchis_test = inchis(data_param_fold.test_set);
-        ranks_test  = NaN (Y_C_test.getNumberOfExamples(), 1);
+        Y_C_test      = Y_C.getSubset (data_param_fold.test_set);
+        inchis_test   = inchis(data_param_fold.test_set);
+        ranks_test    = NaN (Y_C_test.getNumberOfExamples(), 1);
+        eval_set_test = eval_set (data_param_fold.test_set);
         
         for j = 1:Y_C_test.getNumberOfExamples()
+            if (~ eval_set_test(i))
+                continue;
+            end % if
+            
             % Get the inchis of all the candidate in the set for test
             % example j
             inchis_c = Y_C_test.getCandidateSet (j, 0, 'id');
-            if (~ isnan (inchis_c)) ; continue ; end % if
+            
+            % Just for testing
+            mf_corres_test = mf_corres(data_param_fold.test_set);
+            num = Y_C_test.getCandidateSet (j, 0, 'num');
+            assert (isnan (num) == isnan (mf_corres_test(j)));
+            
+            if (isnan (scores{j}))
+                warning ('NaN score!');
+                
+                continue;
+            end % if
             
             [~ , IX] = sort (scores{j}, 'descend');
+            
+            ind = find (strcmp (inchis_c(IX), inchis_test(j)));
+            if (isempty (ind))
+                warning ('The inchi of the example is not in the candidate set.');
+                
+                continue; 
+            end % if
             
             ranks_test(j) = find (strcmp (inchis_c(IX), inchis_test{j}));
         end % for
@@ -237,15 +285,19 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         
         clear data_param_fold;
     end % for
+%     
+    assert (all (isnan (ranks) == (~ eval_set)), ...
+        'The examples without propper candidate set and examples without rank (due to the absence if a candidate set) must be equal.');
     
-    assert (all (isnan (ranks) == isnan (mf_corres)), ...
-        'The examples without candidate set and examples without rank (due to the absence if a candidate set) must be equal.');
+    candNum = arrayfun (@(idx) Y_C.getCandidateSet (idx, 0, 'num'), 1:Y_C.getNumberOfExamples());
+    candNum(isnan (ranks)) = NaN;
     
-    maxCandNum = arrayfun (@(idx) Y_C.getCandidateSet (idx, 0, 'num'), 1:Y_C.getNumberOfExamples());
+    rankPerc = getRankPerc (ranks, max (candNum));
     
-    rankPerc = getRankPerc (ranks, maxCandNum);
+    result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum);
+    save (strcat (outputDir, '/first_results.mat'), 'result', '-v7.3');
     
-    disp (rank);
+    disp (ranks);
     disp (rankPerc);
 end % function 
 
@@ -294,5 +346,5 @@ function rankPerc = getRankPerc (ranks, maxCandNum)
     nel = hist (ranks, 1:max(maxCandNum));
     rankPerc = cumsum(nel)';
     rankPerc = rankPerc / nValidRanks * 100;
-    rankPerc = rankPerc(1:100); 
+%     rankPerc = rankPerc(1:100); 
 end % function

@@ -91,8 +91,13 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     end % if
     
     % Parameter selection    
+%     gamma_opt = 1;
+%     lambda_opt = 1;
     [gamma_opt, lambda_opt] = Select_param_MP_IOKR_reverse_feat(KX_train_list, Y_train,...
         Y_C_train, opt_param, mp_iokr_param, data_param);
+    disp (lambda_opt);
+    disp (gamma_opt);
+    
     
     % Training the reverse IOKR model
     M = Train_reverse_IOKR(Psi_train, gamma_opt);

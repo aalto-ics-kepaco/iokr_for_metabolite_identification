@@ -25,14 +25,17 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
     Mean_Psi_C_train = zeros(d,n_train);
     Cov_Psi_C_train = zeros(d,d);
     for j = 1:n_train
+        tic;
         Y_Cj = Y_C_train.getCandidateSet(j, 1, 'data');       
-        if (isnan (Y_Cj))
+        if (any (any (isnan (Y_Cj))))
             % No candidate set for the desired example available. 
             warning ('No candidate set for desired example.');
             continue;
         end % if
        
-        nj = size(Y_Cj,2);
+        [d, nj] = size (Y_Cj);
+        assert (d == numel (mean_Y), ...
+            'Dimension of the "data" does not match the dimension of the mean vector.')
         if (nj == 0)
             % If a candidate set does not contain any candidate no mean and
             % no covariance matrice needs to be calculated.
@@ -46,6 +49,7 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
         Mean_Psi_C_train(:,j) = mean(Y_Cjn,2);
         Cov_Psi_C_train = Cov_Psi_C_train + 1/nj*(Y_Cjn ...
             - repmat(Mean_Psi_C_train(:,j),1,nj))*(Y_Cjn - repmat(Mean_Psi_C_train(:,j),1,nj))';
+        toc;
     end
 
 end

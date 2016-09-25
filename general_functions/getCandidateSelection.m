@@ -90,9 +90,9 @@ function selec = getCandidateSelection (candidateSets, id, param, ...
                     selec = cell (numCandSets, 1);
 
                     for i = 1:numCandSets;
-                        selec{i} = candidateSets.getExampleIndiceInCandidateSet (i, id(i));
+                        selec{i} = candidateSets.findExampleInCandidateSet (i, id(i));
 
-                        assert (~ any (selec{i}), 'The example-identifier should be in this candidate set.');
+%                         assert (~ any (selec{i}), 'The example-identifier should be in this candidate set.');
 
                         % We want to select everything _but_ the examples
                         % candidate
@@ -106,10 +106,18 @@ function selec = getCandidateSelection (candidateSets, id, param, ...
                 selec = cell (numCandSets, 1);
 
                 for i = 1:numCandSets;
-                    r = rand (candidateSets (i, 0, 'num'), 1);
-                    selec{i} = logical (abs (arrayfun (@(x) sum (x >= cumsum (prob)), r) - 1));
-
-                    selec{i}(candidateSets.getExampleIndiceInCandidateSet (i, id(i))) = param.inclExpCand;
+                    exampleSelection = candidateSets.findExampleInCandidateSet (i, id(i));
+                    if (~ any (exampleSelection))
+                        % The example is _not_ in the candidate set
+                        r = rand (candidateSets (i, 0, 'num'), 1);
+                        selec{i} = logical (abs (arrayfun (@(x) sum (x >= cumsum (prob)), r) - 1));
+                    else
+                        % The example is in the candidate set
+                        r = rand (candidateSets (i, 0, 'num') - 1, 1);
+                        selec{i}(~ exampleSelection) = logical (...
+                            abs (arrayfun (@(x) sum (x >= cumsum (prob)), r) - 1));
+                        selec{i}(exampleSelection) = param.inclExpCand;
+                    end %
                 end % for
             otherwise
                 assert (0, ...

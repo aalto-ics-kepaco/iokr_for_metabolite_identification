@@ -50,7 +50,7 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
     % Selection of the regularization parameter of MP-IOKR using an inner
     % cross-validation experiment
     if (data_param.usePreCalcStat)
-        n_folds = data_param.cv.NumTestTests;
+        n_folds = data_param.cv.NumTestSets;
         c = data_param.cv;
     else
         n_folds = opt_param.nInnerFolds;
@@ -87,15 +87,13 @@ function [ gamma_opt, lambda_opt ] = Select_param_MP_IOKR_reverse_feat( ...
              
         % Compute the mean and covariance of the candidate output feature
         % vectors
-        if (data_param.usePreCalcStat) 
-            stats_cv = data_param.stats_cv(1, i);
-            
+        if (data_param.usePreCalcStat)             
             % Train
-            Mean_Psi_C_train_cv = stats_cv.Mean_Psi_C_train_cv;
-            Cov_Psi_C_train_cv = stast_cv.Cov_Psi_C_train_cv;
+            Mean_Psi_C_train_cv = data_param.stats_cv(1, i).Mean_Psi_C_train_cv;
+            Cov_Psi_C_train_cv = data_param.stats_cv(1, i).Cov_Psi_C_train_cv;
             % Test
-            Mean_Psi_C_test_cv = stats_cv.Mean_Psi_C_test_cv;
-            Cov_Psi_C_test_cv = stast_cv.Cov_Psi_C_test_cv;
+            Mean_Psi_C_test_cv = data_param.stats_cv(1, i).Mean_Psi_C_test_cv;
+            Cov_Psi_C_test_cv = data_param.stats_cv(1, i).Cov_Psi_C_test_cv;
             
             clear stats_cv;
         else

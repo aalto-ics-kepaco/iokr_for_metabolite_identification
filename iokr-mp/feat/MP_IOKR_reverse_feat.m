@@ -104,11 +104,11 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     
     % Training the MP-IOKR model
     if (data_param.usePreCalcStat)
-        stats = data_param.stats;
+%         stats = data_param.stats;
         
         % Train
-        Mean_Psi_C_train = stats.Mean_Psi_C_train;
-        Cov_Psi_C_train = stast.Cov_Psi_C_train;
+        Mean_Psi_C_train = data_param.Mean_Psi_C_train;
+        Cov_Psi_C_train = data_param.Cov_Psi_C_train;
         
         clear stats;
     else

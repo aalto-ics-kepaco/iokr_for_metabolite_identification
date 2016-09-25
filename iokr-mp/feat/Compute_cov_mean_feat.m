@@ -25,7 +25,11 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
     Mean_Psi_C_train = zeros(d,n_train);
     Cov_Psi_C_train = zeros(d,d);
     for j = 1:n_train
-        tic;
+        fprintf ('Candidate set %d/%d\n', j, n_train);
+        
+        
+%         if (j > 1) ; break ; end;
+        
         Y_Cj = Y_C_train.getCandidateSet(j, 1, 'data');       
         if (any (any (isnan (Y_Cj))))
             % No candidate set for the desired example available. 
@@ -49,7 +53,6 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
         Mean_Psi_C_train(:,j) = mean(Y_Cjn,2);
         Cov_Psi_C_train = Cov_Psi_C_train + 1/nj*(Y_Cjn ...
             - repmat(Mean_Psi_C_train(:,j),1,nj))*(Y_Cjn - repmat(Mean_Psi_C_train(:,j),1,nj))';
-        toc;
     end
 
 end

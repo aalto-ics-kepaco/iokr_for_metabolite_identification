@@ -143,12 +143,14 @@ classdef CandidateSets < handle
                     isValid = false;
                     return;
                 end % if
-                if (isnan (lut(i)) ~= any (isnan (selec{i})))
-                    errorStr = 'The rows of the "NaN"-entries of lut and selec must match.';
-                    
-                    isValid = false;
-                    return;
-                end % if
+                % TODO: Seems that this does not hold for the metabolite
+                % identification data-set.
+%                 if (isnan (lut(i)) ~= any (isnan (selec{i})))
+%                     errorStr = 'The rows of the "NaN"-entries of lut and selec must match.';
+%                     
+%                     isValid = false;
+%                     return;
+%                 end % if
                 if (~ any (isnan (selec{i})) & ~ islogical (selec{i}))
                     errorStr = 'The selection vector must be of class logical or NaN.';
                     
@@ -465,13 +467,13 @@ classdef CandidateSets < handle
         end % function
         
         function selec = findExampleInCandidateSet (obj, idx, identifier)
-        %% GETEXAMPLEINDICEINCANDIDATESET returns a selection only of the candidate with matching identifier
+        %% FINDEXAMPLEINCANDIDATESET returns a selection only of the candidate with matching identifier
         %    The returned selection always only contains a single true
         %    value. This means that if several identifier in the candidate
         %    set match the provided IDENTIFIER only the first index is 
         %    returned.
         %
-        %    selec = GETEXAMPLEINDICEINCANDIDATESET (OBJ, IDX, IDENTIFIER)
+        %    selec = FINDEXAMPLEINCANDIDATESET (OBJ, IDX, IDENTIFIER)
         %    Returns a selection with a single true value. The position of
         %    the true value corresponds to the position of the IDENTIFIER
         %    in the OBJ's candidate set for example IDX. 
@@ -494,6 +496,11 @@ classdef CandidateSets < handle
                 idx, 0, CandidateSets.candidateSetFieldnames.identifier);
             
             selec = strcmp (identifiersOfCandidates, identifier{1});
+            if (~ any (selec))
+                warning ('Identifier not found in candidate set.');
+                
+                return;
+            end % if
             
             if (sum (selec) > 1)
                 warning ('The identifier in the candidate set corresponding to example %d are not all unique.', ...
@@ -519,6 +526,8 @@ classdef CandidateSets < handle
                     selec{i} = NaN;
                 end % if
             end % for
+            
+            assert (all (cellfun (@(c) xor (all (isnan (c)), all (c == true)), selec, 'UniformOutput', true)), 'Upps?!');
         end % function
         
         function isEqual = eq (obj1, obj2)

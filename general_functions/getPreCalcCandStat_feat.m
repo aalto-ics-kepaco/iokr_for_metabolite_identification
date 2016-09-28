@@ -34,7 +34,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
         'cv_param',        param.opt_param.cv_param,         ...
         'selection_param', param.data_param.selection_param, ...
         'repetition',      param.data_param.repetition,      ...
-        'center',          param.mp_iokr_param.center,       ...
+        'center',          param.mp_iokrw_param.center,       ...
         'is_debug_mode',   param.debug_param.isDebugMode);
     
     if (param_struct.is_debug_mode)
@@ -70,9 +70,9 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
             matObj.repetition = param.data_param.repetition;
             matObj.center     = param.mp_iokr_param.center;
             % Dimension: [1 x param.data_param.cv.outer.NumTestSets]
-            matObj.stats      = struct ([]);
+            matObj.stats      = struct ();
             % Dimension: [param.data_param.cv.inner.NumTestSets x cv.outer.NumTestSets]
-            matObj.stats_cv   = struct ([]);
+            matObj.stats_cv   = struct ();
 
             for i = 1:cv.outer.NumTestSets
                 fprintf ('Outer fold: %d/%d\n', i, cv.outer.NumTestSets);

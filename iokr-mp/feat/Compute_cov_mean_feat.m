@@ -1,4 +1,5 @@
-function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train, mean_Y, ker_center)
+function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
+    Y_C_train, mean_Y, ker_center, verbose)
 %======================================================
 % DESCRIPTION:
 % Computation of the candidate feature mean and covariance for
@@ -10,6 +11,8 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
 %                   the candidate output vectors if ker_center is set to 1
 % ker_center:       value of 0 of 1 indicating if the output feature/kernel
 %                   should be centered.
+% verbose:          binary indicating whether the progress of the
+%                   calculation of the statistics should be printed
 %
 % OUTPUTS:
 % Mean_Psi_C_train: matrix of size d*n_train containing the averaged
@@ -18,25 +21,33 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
 %                   candidate output feature vectors
 %
 %======================================================
+    if (nargin < 4)
+        verbose = false;
+    end % if
+    
+    if (verbose)
+        reverseStr = '';
+    end % if
 
     n_train = Y_C_train.getNumberOfExamples();
         
     d = size (Y_C_train.getCandidateSet (1, 0, 'data'), 1);
     Mean_Psi_C_train = zeros(d,n_train);
     Cov_Psi_C_train = zeros(d,d);
-    for j = 1:n_train
-        fprintf ('Candidate set %d/%d\n', j, n_train);
-        
-        
-%         if (j > 1) ; break ; end;
-        
-        Y_Cj = Y_C_train.getCandidateSet(j, 1, 'data');       
-        if (any (any (isnan (Y_Cj))))
-            % No candidate set for the desired example available. 
-            warning ('No candidate set for desired example.');
-            continue;
+    for idx = 1:n_train
+         if (verbose)
+            percentDone = 100 * idx / n_train;
+            msg = sprintf ('Calculate candidate statistics statistics: %d/%d (%3.1f perc)', idx, n_train, percentDone);
+            fprintf ([reverseStr, msg]);
+            reverseStr = repmat (sprintf ('\b'), 1, length (msg));           
         end % if
-       
+        
+        if (isnan (Y_C_train.getCandidateSet(idx, 0, 'num')))
+            % No candidate set for the desired example available.            
+            continue
+        end
+        Y_Cj = Y_C_train.getCandidateSet(idx, 1, 'data');       
+        
         [d, nj] = size (Y_Cj);
         assert (d == numel (mean_Y), ...
             'Dimension of the "data" does not match the dimension of the mean vector.')
@@ -50,11 +61,14 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat(Y_C_train
         Y_Cjn = norma(Y_Cj, mean_Y, ker_center);
 
         % computation of the mean and the covariance
-        Mean_Psi_C_train(:,j) = mean(Y_Cjn,2);
+        Mean_Psi_C_train(:,idx) = mean(Y_Cjn,2);
         Cov_Psi_C_train = Cov_Psi_C_train + 1/nj*(Y_Cjn ...
-            - repmat(Mean_Psi_C_train(:,j),1,nj))*(Y_Cjn - repmat(Mean_Psi_C_train(:,j),1,nj))';
+            - repmat(Mean_Psi_C_train(:,idx),1,nj))*(Y_Cjn - repmat(Mean_Psi_C_train(:,idx),1,nj))';
     end
-
+    
+    if (verbose)
+        fprintf ('\n');
+    end % if
 end
 
 

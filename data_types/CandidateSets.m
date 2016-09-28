@@ -497,7 +497,7 @@ classdef CandidateSets < handle
             
             selec = strcmp (identifiersOfCandidates, identifier{1});
             if (~ any (selec))
-                warning ('Identifier not found in candidate set.');
+%                 warning ('Identifier not found in candidate set.');
                 
                 return;
             end % if

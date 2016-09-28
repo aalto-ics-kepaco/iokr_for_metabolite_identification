@@ -1,3 +1,5 @@
+function [selec, debugVec] = getCandidateSelection (candidateSets, id, param, ...
+    modeStr, directory, overwrite)
 %% GETCANDIDATESELECTION Function to select subset of candidates for MP
 %    SELEC = GETCANDIDATESELECTION (CANDIDATESETS, ID, PARAM) returns the 
 %    candidate selection. ID contains the identifier for each example, 
@@ -39,9 +41,6 @@
 %       selec                   (l x 1)-dimensional cell-array storing the
 %                               logical-vectors representing the candidate
 %                               selection. 
-function selec = getCandidateSelection (candidateSets, id, param, ...
-    modeStr, directory, overwrite)
-
     if (nargin < 3)
         error ('getCandidateSelection:InvalidArgument', ...
             'Not enough arguments.');
@@ -73,56 +72,89 @@ function selec = getCandidateSelection (candidateSets, id, param, ...
         end % if
     end % if
     
+    if (nargout > 1)
+        debugVec = true (numel (id), 1);
+    end % if
+    
     % Perform / load selection
     if (ismember (modeStr, {'normal', 'cache'}))
         [isValid, errStr] = validateIdStructure (id, candidateSets);
         if (~ isValid) 
             error ('getCandidateSelection:InvalidArgument', 'Message: %s', errStr);
         end % if
-
+        
         % Calculate the candidate selection
         switch (param.strategy)
             case 'all'
                 if (param.inclExpCand)
                     selec = candidateSets.createSelectionOfAllCandidates();
                 else
-                    numCandSets = candidateSets.getNumberOfExamples();
-                    selec = cell (numCandSets, 1);
+                    numExamples = candidateSets.getNumberOfExamples();
+                    selec = cell (numExamples, 1);
 
-                    for i = 1:numCandSets;
+                    for i = 1:numExamples;
                         selec{i} = candidateSets.findExampleInCandidateSet (i, id(i));
-
-%                         assert (~ any (selec{i}), 'The example-identifier should be in this candidate set.');
-
+                        
                         % We want to select everything _but_ the examples
                         % candidate
                         selec{i} = ~ selec{i};
                     end % for
                 end % if
             case 'random'
-                prob = [param.perc / 100, 1 - (param.perc / 100)];
+                numExamples = candidateSets.getNumberOfExamples();
+                selec = cell (numExamples, 1);
+                
+                % Save some statistics
+                numSelecCand = 0;
+                numCand      = 0;
 
-                numCandSets = candidateSets.getNumberOfExamples();
-                selec = cell (numCandSets, 1);
-
-                for i = 1:numCandSets;
+                for i = 1:numExamples;
+                    numCandForExamples = candidateSets.getCandidateSet (i, 0, 'num');
+                    if (isnan (numCandForExamples))
+                        % There is no candidate set
+                        selec{i} = NaN;
+                        
+                        if (nargout > 1)
+                            debugVec(i, :) = false;
+                        end % if
+                        
+                        continue;
+                    end % if
+                    
                     exampleSelection = candidateSets.findExampleInCandidateSet (i, id(i));
-                    if (~ any (exampleSelection))
+                    if (~ any (exampleSelection))      
                         % The example is _not_ in the candidate set
-                        r = rand (candidateSets (i, 0, 'num'), 1);
-                        selec{i} = logical (abs (arrayfun (@(x) sum (x >= cumsum (prob)), r) - 1));
+                        r = rand (candidateSets.getCandidateSet (i, 0, 'num'), 1);
+                        if (nargout > 1)
+                            debugVec(i) = false;
+                        end % if
                     else
                         % The example is in the candidate set
-                        r = rand (candidateSets (i, 0, 'num') - 1, 1);
-                        selec{i}(~ exampleSelection) = logical (...
-                            abs (arrayfun (@(x) sum (x >= cumsum (prob)), r) - 1));
-                        selec{i}(exampleSelection) = param.inclExpCand;
+                        r = rand (candidateSets.getCandidateSet (i, 0, 'num') - 1, 1);
                     end %
+                    % Add the selected candidates
+                    selec{i}(~ exampleSelection) = r < (param.perc / 100);
+                    % Add the example's candidate if needed
+                    selec{i}(exampleSelection)   = logical (param.inclExpCand);
+                    
+                    numCand      = numCand + numCandForExamples;
+                    numSelecCand = numSelecCand + sum (selec{i});
                 end % for
+                
+                fprintf ('Number of all the candidates (NOT unique ones): %d\n', numCand);
+                fprintf ('Number of selected candidates: %d\n', numSelecCand);
+                fprintf ('=> %.3f%%\n', (100 * numSelecCand) / numCand);
             otherwise
-                assert (0, ...
+                error ('getCandidateSelection:InvalidArgument', ...
                     'The parameter-structure should not contain any other strategy than "all" and "random"');   
         end % switch
+        
+        % Some assertions
+        assert (all (cellfun (@(c) size(c, 1), selec) == 1));
+        
+        numCandPerSet = arrayfun (@(idx) candidateSets.getCandidateSet (idx, 0, 'num'), 1:candidateSets.getNumberOfExamples());
+        numSelectionsPerSet = cellfun (@(c) size(c, 2), selec);
+        assert (all (numSelectionsPerSet(~ isnan (numCandPerSet)) == numCandPerSet(~ isnan (numCandPerSet))'));
         
         % Write out selection if needed
         if (strcmp (modeStr, 'cache'))

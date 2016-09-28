@@ -1,5 +1,5 @@
-function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
-    opt_param, mp_iokr_param, data_param)
+function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
+    opt_param, mp_iokr_param, data_param, debug_param)
 %======================================================
 % DESCRIPTION:
 % MP-IOKR with reverse IOKR in the case of a feature represention in output
@@ -53,15 +53,36 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
 %               candidate set
 %
 %======================================================
+    if (debug_param.verbose)
+        sw_mkl_weights                     = StopWatch ('mkl-weights');
+        sw_input_kernel_processing         = StopWatch ('input-kernel-processing');
+        sw_train_reverse_IOKR              = StopWatch ('Train_reverse_IOKR');
+        sw_compute_cov_mean_feat           = StopWatch ('Compute_cov_mean_feat');
+        sw_train_MP_IOKR_reverse_feat      = StopWatch ('Train_MP_IOKR_reverse_feat');
+        sw_prediction_MP_IOKR_reverse_feat = StopWatch ('Prediction_MP_IOKR_reverse_feat');
+        sw_preimage_MP_IOKR_feat           = StopWatch ('Preimage_MP_IOKR_feat');
+    end % if
+
     train_set = find (data_param.train_set);
     test_set  = find (data_param.test_set);
 
-    % Learning kernel weights with Multiple Kernel Learning  
     KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
+    
+    %% Learning kernel weights with Multiple Kernel Learning  
+    if (debug_param.verbose) ; sw_mkl_weights.start() ; end % if
+    
     w = mkl_weight(mp_iokr_param.mkl, KX_list_train, normmat(Y_train'*Y_train));
+    
+    if (debug_param.verbose)
+        sw_mkl_weights.stop();
+        sw_mkl_weights.showAvgTime();
+    end % if
+        
     clear KX_list_train
     
-    % Centering and normalization of input kernel
+    %% Centering and normalization of input kernel
+    if (debug_param.verbose) ; sw_input_kernel_processing.start() ; end % if
+    
     n_kx = length(KX_list);
     switch mp_iokr_param.rev_iokr
         case 'joint' 
@@ -79,8 +100,13 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
                 KX_train_test_list{k} = w(k) * KX_train_test_list{k};
             end
     end
+    
+    if (debug_param.verbose)
+        sw_input_kernel_processing.stop();
+        sw_input_kernel_processing.showAvgTime();
+    end % if
 
-    % Training output feature vectors
+    %% Training output feature vectors
     mean_Y_train = mean(Y_train,2);
     Psi_train = norma(Y_train, mean_Y_train, mp_iokr_param.center);
     
@@ -90,36 +116,80 @@ function [ score ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         Y_C_train = Y_C.getSubset (train_set);
     end % if
     
-    % Parameter selection    
-%     gamma_opt = 1;
-%     lambda_opt = 1;
-    [gamma_opt, lambda_opt] = Select_param_MP_IOKR_reverse_feat(KX_train_list, Y_train,...
-        Y_C_train, opt_param, mp_iokr_param, data_param);
-    disp (lambda_opt);
-    disp (gamma_opt);
+    %% Parameter selection    
+    fprintf ('Parameter selection\n');
+    debug_info = struct ();
     
+    [gamma_opt, lambda_opt, debug_info.mp_err] = Select_param_MP_IOKR_reverse_feat ( ...
+        KX_train_list, Y_train, Y_C_train, opt_param, mp_iokr_param, data_param, debug_param);
+%     lambda_opt = 0.5;
+%     gamma_opt = 0.5;
+%     debug_info.mp_err = [];
     
-    % Training the reverse IOKR model
+    debug_info.gamma_opt = gamma_opt;
+    debug_info.lambda_opt = lambda_opt;
+    
+    fprintf ('Selected parameter: lambda = %e, gamma = %e\n', ...
+        debug_info.lambda_opt, debug_info.gamma_opt);
+    
+    if (debug_param.verbose)
+        fprintf ('MP-ERR: mean over folds (1 x n_folds) & (n_val_lambda x n_folds):\n');
+        disp ([mean(debug_info.mp_err, 2), debug_info.mp_err]);
+    end % if
+    
+    %% Training the reverse IOKR model
+    if (debug_param.verbose) ; sw_train_reverse_IOKR.start() ; end % if
+    
     M = Train_reverse_IOKR(Psi_train, gamma_opt);
     
-    % Training the MP-IOKR model
-    if (data_param.usePreCalcStat)
-%         stats = data_param.stats;
-        
+    if (debug_param.verbose) 
+        sw_train_reverse_IOKR.stop();
+        sw_train_reverse_IOKR.showAvgTime();
+    end % if
+    
+    %% Training the MP-IOKR model
+    if (data_param.usePreCalcStat) 
         % Train
         Mean_Psi_C_train = data_param.Mean_Psi_C_train;
         Cov_Psi_C_train = data_param.Cov_Psi_C_train;
         
         clear stats;
     else
-        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, mean_Y_train, mp_iokr_param.center);
+        if (debug_param.verbose) ; sw_compute_cov_mean_feat.start() ; end % if
+            
+        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, mean_Y_train, mp_iokr_param.center, debug_param.verbose);
+        
+        if (debug_param.verbose)
+            sw_compute_cov_mean_feat.stop();
+            sw_compute_cov_mean_feat.showAvgTime();
+        end % if
     end % if
+    if (debug_param.verbose) ; sw_train_MP_IOKR_reverse_feat.start() ; end % if
+    
     C = Train_MP_IOKR_reverse_feat(KX_train_list, Psi_train, M, Mean_Psi_C_train, Cov_Psi_C_train, lambda_opt);
     
-    % Prediction on the test set
+    if (debug_param.verbose)
+        sw_train_MP_IOKR_reverse_feat.stop();
+        sw_train_MP_IOKR_reverse_feat.showAvgTime();
+    end % if
+    %% Prediction on the test set  
+    if (debug_param.verbose) ; sw_prediction_MP_IOKR_reverse_feat.start() ; end % if
+    
     Psi_pred = Prediction_MP_IOKR_reverse_feat(KX_train_test_list, C);
     
-    % Preimage
+    if (debug_param.verbose)
+        sw_prediction_MP_IOKR_reverse_feat.stop();
+        sw_prediction_MP_IOKR_reverse_feat.showAvgTime();
+    end % if    
+    %% Preimage
     Y_C_test = Y_C.getSubset (test_set);
+    
+    if (debug_param.verbose) ; sw_preimage_MP_IOKR_feat.start() ; end % if
+    
     score = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, mp_iokr_param.center);
+    
+    if (debug_param.verbose)
+        sw_preimage_MP_IOKR_feat.stop();
+        sw_preimage_MP_IOKR_feat.showAvgTime();
+    end % if    
 end

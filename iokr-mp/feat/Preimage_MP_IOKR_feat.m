@@ -22,16 +22,13 @@ function [ scores ] = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, ke
     % Pre-image
     scores = cell(n_test,1);
     for j = 1:n_test
-        Y_Cj = Y_C_test.getCandidateSet (j, 0, 'data');
-        if (any (any (isnan (Y_Cj))))
-            % No candidate set for the desired example available. 
-            warning ('No candidate set for desired example.');
-            
+        if (isnan (Y_C_test.getCandidateSet (j, 0, 'num')))
             scores{j} = NaN;
             
             continue;
         end % if
-             
+        
+        Y_Cj = Y_C_test.getCandidateSet (j, 0, 'data');             
         Psi_Cj = norma(Y_Cj, mean_Y_train, ker_center); %  centering and normalization
         scores{j} = Psi_pred(:,j)' * Psi_Cj;         
     end

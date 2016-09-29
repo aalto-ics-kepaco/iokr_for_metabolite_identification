@@ -40,11 +40,11 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
 %======================================================
     if (debug_param.verbose)
         % Create some stop-watches
-        sw_train_reverse_IOKR         = StopWatch ('Train_reverse_IOKR (g-function)');
+        sw_Train_reverse_IOKR_feat         = StopWatch ('Train_reverse_IOKR_feat (g-function)');
         sw_compute_cov_mean_feat      = StopWatch ('Compute_cov_mean_feat (train & test)');
-        sw_train_MP_IOKR_reverse_feat = StopWatch ('Train_reverse_IOKR_reverse_feat (h-function)');
+        sw_train_MP_IOKR_reverse_feat = StopWatch ('Train_MP_IOKR_reverse_feat (h-function)');
         sw_calculate_mp_error         = StopWatch ('Calculate mp-error');
-        sw_find_hyper_parameter       = StopWatch ('Find hyper-parameter (Train_reverse_IOKR_reverse_feat & Calculate mp-error)');
+        sw_find_hyper_parameter       = StopWatch ('Find hyper-parameter (Train_reverse_IOKR_feat_reverse_feat & Calculate mp-error)');
         sw_whole_loop                 = StopWatch ('WHOLE LOOP');
         sw_select_param_reverse_IOKR  = StopWatch ('Select_param_reverse_IOKR (gamma)');
     end % if 
@@ -56,7 +56,7 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
     Psi_train = norma(Y_train, mean_Y_train, mp_iokr_param.center);
     
     % Selection of the regularization parameter(s) of reverse IOKR
-    if (debug_param.verbose) ; sw_select_param_reverse_IOKR.start(); end % if
+    if (debug_param.verbose) ; sw_select_param_reverse_IOKR.start() ; end % if
     
     gamma_opt = Select_param_reverse_IOKR(KX_train_list, Psi_train, opt_param.val_gamma);
     
@@ -104,11 +104,11 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
         Psi_test_cv = Psi_train(:,test_set_cv);
         
         % Train the reverse IOKR model
-        if (debug_param.verbose) ; sw_train_reverse_IOKR.start() ; end % if      
+        if (debug_param.verbose) ; sw_Train_reverse_IOKR_feat.start() ; end % if      
         
-        M_cv = Train_reverse_IOKR(Psi_train_cv, gamma_opt);        
+        M_cv = Train_reverse_IOKR_feat(Psi_train_cv, gamma_opt);        
         
-        if (debug_param.verbose) ; sw_train_reverse_IOKR.stop() ; end % if
+        if (debug_param.verbose) ; sw_Train_reverse_IOKR_feat.stop() ; end % if
              
         % Compute the mean and covariance of the candidate output feature
         % vectors
@@ -165,7 +165,7 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
         if (debug_param.verbose)
             sw_whole_loop.stop();
                         
-            sw_train_reverse_IOKR.showAvgTime();
+            sw_Train_reverse_IOKR_feat.showAvgTime();
             sw_compute_cov_mean_feat.showAvgTime();
             sw_find_hyper_parameter.showAvgTime();
             fprintf ('  > '); sw_train_MP_IOKR_reverse_feat.showAvgTime();
@@ -173,7 +173,7 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
             
             fprintf ('----------\n')
             
-            avgTime_sumOfWatches = sw_train_reverse_IOKR.avgTime_ + ...
+            avgTime_sumOfWatches = sw_Train_reverse_IOKR_feat.avgTime_ + ...
                 sw_compute_cov_mean_feat.avgTime_ + sw_find_hyper_parameter.avgTime_;
             fprintf ('%.3fs --- ALL stop-watches\n', avgTime_sumOfWatches);
             sw_whole_loop.showAvgTime();

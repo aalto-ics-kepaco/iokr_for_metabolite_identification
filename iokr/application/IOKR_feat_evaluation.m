@@ -1,4 +1,4 @@
-function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
+function IOKR_feat_evaluation (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 
@@ -25,24 +25,25 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
 
     %% Check the input arguments and set defaults
     if (nargin < 2)
-        error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
+        error ('IOKR_feat_evaluation:InvalidInput', ...
             'Not enough input arguments.');
     end % if
     if (nargin < 3)
         param = struct ();
     end % if   
     if (~ exist (inputDir, 'dir'))
-        error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', '%s: No such directory.', ...
+        error ('IOKR_feat_evaluation:InvalidInput', '%s: No such directory.', ...
             inputDir);
     end % if
     if (~ exist (outputDir, 'dir'))
-        error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', '%s: No such directory.', ...
+        error ('IOKR_feat_evaluation:InvalidInput', '%s: No such directory.', ...
             outputDir);
     end % if
     
     % Set the defaults values for the parameter in PARAM if needed.
-    param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});    
-    
+    param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
+        { 'debug_param', 'opt_param', 'iokr_param', 'data_param' });    
+      
     %% Load data 
     % ... input-kernels for the training examples
     [KX_list, param] = loadInputKernelsIntoList (inputDir, param);
@@ -68,10 +69,9 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         % gives evidence that in the use-case we also do not encounter
         % problems. Therefore lets make the following simplifications:
         param.opt_param = struct (   ...
-            'val_gamma',   [0.5, 1], ...
             'val_lambda',  [0.5, 1], ...
             'nOuterFolds', 10,       ...
-            'nInnerFolds', 2);        
+            'nInnerFolds', 2);  
         
         n = size (KX_list{1}, 1);
         param.debug_param.debug_set = false (n, 1);        
@@ -100,7 +100,6 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     end % if
     
     % ... candidate sets 
-    % ... candidate sets 
     mf_corres = load (strcat (inputDir, '/candidates/matching_mf_train.txt'));
     if (param.debug_param.isDebugMode)
         mf_corres = mf_corres(param.debug_param.debug_set);
@@ -126,41 +125,17 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     if (param.debug_param.isDebugMode)
         eval_set = eval_set(param.debug_param.debug_set);
     end % if
-    
+      
     assert (Y_C.getNumberOfExamples() == size (Y, 2), ...
         'The number of examples in the associated with the candidate sets is different from the number of example fingerprint vectors.');    
     
-    %% Load / Store pre-calculated statistics
-    if (param.data_param.usePreCalcStat)
-        cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold), ...
-                           'inner', struct ('nFolds', param.opt_param.nInnerFolds));                       
-        param.data_param.cv_param = cv_param;
-        
-        % NOTE: The selec_ property of Y_C will be modified according to
-        %       the selection defined by PARAM.DATA_PARAM.SELECTION_PARAM.
-        tic;
-        matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, outputDir);
-        fprintf ('Loading / pre-calculating of the candidate statistics took %.3fs\n', toc);
-        
-        param.data_param.cv         = matObj.cv;
-        param.mp_iokr_param.center  = matObj.center;
-        param.data_param.repetition = matObj.repetition;
-        % matObj also contains the statistics
-        param.data_param.matObj     = matObj;
-    else       
-        % Select a subset of candidates. By using the default values ALL the 
-        % candidates are selected.
-        selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);      
-        Y_C.setSelectionsOfCandidateSets (selec);
-        
-        cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold));
-        param.data_param.cv_param = cv_param;
-        param.data_param.cv       = getCVIndices (param.data_param.cv_param);
-    end % if
-    
     %% Evaluate the performance using 10-fold cv
+    cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold));
+    param.data_param.cv_param = cv_param;
+    param.data_param.cv       = getCVIndices (param.data_param.cv_param);
+        
     ranks = NaN (Y_C.getNumberOfExamples(), 1);
-    debug_info = struct('lambda_opt', [], 'gamma_opt', [], 'mp_err', []);
+    debug_info = struct('lambda_opt', [], 'err', []);
 
     for foldIdx = 1:param.data_param.cv.outer.NumTestSets
         fprintf ('Outer fold: %d/%d\n', foldIdx, param.data_param.cv.outer.NumTestSets);
@@ -168,25 +143,16 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         data_param_fold = struct();
         data_param_fold.train_set = training_my (param.data_param.cv.outer, foldIdx);
         data_param_fold.test_set  = test_my (param.data_param.cv.outer, foldIdx);
-        data_param_fold.usePreCalcStat = param.data_param.usePreCalcStat;
-        
-        if (data_param_fold.usePreCalcStat)
-            % By loading the covariance and mean vectors at this place, we
-            % save some memory, as only the data is loaded which is needed.
-            data_param_fold.cv       = param.data_param.cv.inner{foldIdx};
-            data_param_fold.stats    = param.data_param.matObj.stats(foldIdx, 1);
-            data_param_fold.stats_cv = param.data_param.matObj.stats_cv(foldIdx, :);
-        end % if
         
         % Calculate the scores for each candidate corresponding the current
         % test-examples
-        [scores_test, debug_info(foldIdx)] = MP_IOKR_reverse_feat (KX_list, Y(:, data_param_fold.train_set), Y_C, ...
-            param.opt_param, param.mp_iokr_param, data_param_fold, param.debug_param);
+        Y_C_test = Y_C.getSubset (data_param_fold.test_set);
+        [scores_test, debug_info(foldIdx)] = IOKR_feat (KX_list, Y(:, data_param_fold.train_set), Y_C_test, ...
+            param.opt_param, param.iokr_param, data_param_fold, param.debug_param);
         assert (numel (scores_test) == numel (find (data_param_fold.test_set)), ...
             'There must be a score for each test-examples.');
         
-        % Computation of the ranks of the test examples
-        Y_C_test      = Y_C.getSubset (data_param_fold.test_set);
+        % Computation of the ranks of the test examples     
         inchis_test   = inchis(data_param_fold.test_set);
         eval_set_test = eval_set(data_param_fold.test_set);
         
@@ -203,18 +169,16 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     rankPerc = getRankPerc (ranks, max (candNum));
     
     %% Store results
-    % FIXME: This result should be stored using the hash value for the
-    % corresponding setting. 
+    % FIXME: The hash-values should be associated with a certain setting
+    % using some database.
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
         'debug_info', debug_info); %#ok<NASGU>
     
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...
-        'selection_param', param.data_param.selection_param,    ...
-        'repetition',      param.data_param.repetition,         ...
         'input_kernel',    upper(param.data_param.inputKernel), ...
-        'center',          param.mp_iokr_param.center,          ...
-        'rev_iokr',        param.mp_iokr_param.rev_iokr));
+        'center',          param.iokr_param.center,             ...
+        'cv_type',         param.iokr_param.cv_type));
     save (strcat (outputDir, '/', settingHash, '.mat'), 'result', '-v7.3');
     
     disp ('! Ready !');

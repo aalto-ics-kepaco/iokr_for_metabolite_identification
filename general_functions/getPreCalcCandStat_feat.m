@@ -11,7 +11,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
 %    TODO:
 %       INCHIS should not be a parameter of this function. However, in order
 %       to prevent miss use (by me ;)) it will be passed into the function
-%       for the moment. Btw: INCHI should go as identifier into Y_C!
+%       for the moment. FIXME: INCHI should go as identifier into Y_C!
 %
 %       The parameter used for pre-calculation must be associated with the
 %       stored statistics. Those statistics are stored using a filename
@@ -31,10 +31,10 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
 
     % Use hash to find file matching the parameters
     param_struct = struct (                                  ...
-        'cv_param',        param.opt_param.cv_param,         ...
+        'cv_param',        param.data_param.cv_param,        ...
         'selection_param', param.data_param.selection_param, ...
         'repetition',      param.data_param.repetition,      ...
-        'center',          param.mp_iokrw_param.center,       ...
+        'center',          param.mp_iokr_param.center,       ...
         'is_debug_mode',   param.debug_param.isDebugMode);
     
     if (param_struct.is_debug_mode)
@@ -49,7 +49,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
     statHash = DataHash (param_struct);
     statFn = strcat (inOutDir, '/pre_calculated_stats/', statHash, '.mat');
     
-    cv    = getCVIndices (param.opt_param.cv_param);
+    cv    = getCVIndices (param.data_param.cv_param);
     selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);
     
     % Load respectively pre-calculated the statistics

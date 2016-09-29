@@ -46,7 +46,7 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
             % No candidate set for the desired example available.            
             continue
         end
-        Y_Cj = Y_C_train.getCandidateSet(idx, 1, 'data');       
+        Y_Cj = full (Y_C_train.getCandidateSet(idx, 1, 'data'));       
         
         [d, nj] = size (Y_Cj);
         assert (d == numel (mean_Y), ...

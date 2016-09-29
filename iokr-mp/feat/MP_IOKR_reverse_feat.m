@@ -56,7 +56,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     if (debug_param.verbose)
         sw_mkl_weights                     = StopWatch ('mkl-weights');
         sw_input_kernel_processing         = StopWatch ('input-kernel-processing');
-        sw_train_reverse_IOKR              = StopWatch ('Train_reverse_IOKR');
+        sw_Train_reverse_IOKR_feat              = StopWatch ('Train_reverse_IOKR_feat');
         sw_compute_cov_mean_feat           = StopWatch ('Compute_cov_mean_feat');
         sw_train_MP_IOKR_reverse_feat      = StopWatch ('Train_MP_IOKR_reverse_feat');
         sw_prediction_MP_IOKR_reverse_feat = StopWatch ('Prediction_MP_IOKR_reverse_feat');
@@ -129,22 +129,22 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     debug_info.gamma_opt = gamma_opt;
     debug_info.lambda_opt = lambda_opt;
     
-    fprintf ('Selected parameter: lambda = %e, gamma = %e\n', ...
-        debug_info.lambda_opt, debug_info.gamma_opt);
-    
+    fprintf ('Selected parameter: lambda = %e\ngamma =\n', debug_info.lambda_opt);
+    fprintf ('%e\n', debug_info.gamma_opt);
+      
     if (debug_param.verbose)
         fprintf ('MP-ERR: mean over folds (1 x n_folds) & (n_val_lambda x n_folds):\n');
         disp ([mean(debug_info.mp_err, 2), debug_info.mp_err]);
     end % if
     
     %% Training the reverse IOKR model
-    if (debug_param.verbose) ; sw_train_reverse_IOKR.start() ; end % if
+    if (debug_param.verbose) ; sw_Train_reverse_IOKR_feat.start() ; end % if
     
-    M = Train_reverse_IOKR(Psi_train, gamma_opt);
+    M = Train_reverse_IOKR_feat(Psi_train, gamma_opt);
     
     if (debug_param.verbose) 
-        sw_train_reverse_IOKR.stop();
-        sw_train_reverse_IOKR.showAvgTime();
+        sw_Train_reverse_IOKR_feat.stop();
+        sw_Train_reverse_IOKR_feat.showAvgTime();
     end % if
     
     %% Training the MP-IOKR model

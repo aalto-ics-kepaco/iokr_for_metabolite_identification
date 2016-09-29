@@ -1,4 +1,4 @@
-function [ M ] = Train_reverse_IOKR( Psi_train, vec_gamma )
+function [ M ] = Train_reverse_IOKR_feat( Psi_train, vec_gamma )
 %======================================================
 % DESCRIPTION:
 % Training of reverse IOKR in the case of multiple input kernels
@@ -21,7 +21,6 @@ function [ M ] = Train_reverse_IOKR( Psi_train, vec_gamma )
     
     Mc = cell(n_kx,1);
     for k = 1:n_kx
-
         Mc{k} = (vec_gamma(k) * eye(n_train) + KY_train) \ (Psi_train');
     end
     

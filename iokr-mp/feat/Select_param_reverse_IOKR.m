@@ -24,8 +24,7 @@ function [ vec_gamma_opt ] = Select_param_reverse_IOKR( KX_train_list, Psi_train
     KY_train = Psi_train'*Psi_train;
 
     vec_gamma_opt = zeros(n_kx,1);
-    for i = 1:n_kx
-        
+    for i = 1:n_kx      
         mse = zeros(length(val_gamma),1);
         for ig = 1:length(val_gamma)
             gamma = val_gamma(ig);
@@ -37,9 +36,7 @@ function [ vec_gamma_opt ] = Select_param_reverse_IOKR( KX_train_list, Psi_train
             mse(ig) = 1/n_train * trace(LOOE' * KX_train_list{i} * LOOE);
         end
         [~,ind_gamma_opt] = min(mse);
-        vec_gamma_opt(i) = val_gamma(ind_gamma_opt);
-        
+        vec_gamma_opt(i) = val_gamma(ind_gamma_opt);      
     end
-
 end
 

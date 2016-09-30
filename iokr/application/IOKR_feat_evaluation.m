@@ -41,6 +41,7 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
     end % if
     
     % Set the defaults values for the parameter in PARAM if needed.
+%     fprintf ('Random seed: %d\n', param.debug_param.randomSeed);
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
         { 'debug_param', 'opt_param', 'iokr_param', 'data_param' });    
       
@@ -51,9 +52,17 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
             'No kernel loaded.');
     end % if
+    
+    % Set seed in order to be able to reproduce the settings.
+    % By default this is set to 'shuffle'. This means, that the current
+    % time is used as seed. However, if we run the script on triton the
+    % jobs might start at the same time. We therefore need to be able to
+    % set the seed manualy. For example by using the slurm-job-id. This can
+    % be done by the calling sbatch-file.
+    rng (param.debug_param.randomSeed);
+    
     if (param.debug_param.isDebugMode)
-        % Set seed in order to be able to reproduce the settings.
-        rng (param.debug_param.randomSeed);
+        fprintf ('Show me a random-number: %f\n', rand(1));
         
         % Modify the output-dir & creat it if needed
         outputDir = strcat (outputDir, '/debug/');
@@ -172,7 +181,7 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
     % FIXME: The hash-values should be associated with a certain setting
     % using some database.
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
-        'debug_info', debug_info); %#ok<NASGU>
+        'debug_info', debug_info, 'opt_param', param.opt_param); %#ok<NASGU>
     
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...

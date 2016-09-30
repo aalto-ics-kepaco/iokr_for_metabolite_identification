@@ -6,7 +6,7 @@ function preCalcCandStat (cand)
 
     % Fingerprints
     Y = load (strcat (inputDir, '/fingerprints/fp.mat'));
-    Y = Y.Y;
+    Y = full (Y.Y);
 
     % Identifier (inchis) for the training examples
     inchis = readtext (strcat (inputDir, '/inchi.txt'));
@@ -34,7 +34,6 @@ function preCalcCandStat (cand)
         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});
 
     % Cross-validation settings
-%     param.opt_param.nInnerFolds = 2;
     cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold), ...
                        'inner', struct ('nFolds', param.opt_param.nInnerFolds));                       
     param.opt_param.cv_param = cv_param;

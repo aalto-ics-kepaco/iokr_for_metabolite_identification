@@ -40,7 +40,7 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
 %======================================================
     if (debug_param.verbose)
         % Create some stop-watches
-        sw_Train_reverse_IOKR_feat         = StopWatch ('Train_reverse_IOKR_feat (g-function)');
+        sw_Train_reverse_IOKR_feat    = StopWatch ('Train_reverse_IOKR_feat (g-function)');
         sw_compute_cov_mean_feat      = StopWatch ('Compute_cov_mean_feat (train & test)');
         sw_train_MP_IOKR_reverse_feat = StopWatch ('Train_MP_IOKR_reverse_feat (h-function)');
         sw_calculate_mp_error         = StopWatch ('Calculate mp-error');

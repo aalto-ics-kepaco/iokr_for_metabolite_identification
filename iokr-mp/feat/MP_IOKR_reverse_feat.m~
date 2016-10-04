@@ -99,8 +99,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
                 KX_train_list{k} = w(k) * KX_train_list{k};
             end
         otherwise
-            error ('MP_IOKR_reverse_feat:InvalidInput', ...
-                '%s is not a valid value for MP_IOKR_PARAM.REV_IOKR', mp_iokr_param.rev_iokr);
+            error ('MP_IOKR_reverse_feat:InvalidInput', '%')
     end
     
     if (debug_param.verbose)
@@ -139,13 +138,13 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         KX_train_test_list = cell (n_kx, 1);
         
         k = 1;
-        for val_gamma_u = gamma_opt_u'
+        for val_gamma_u = gamma_opt_u
             k_selec = (gamma_opt == val_gamma_u);
             [KX_train_list{k}, KX_train_test_list{k}] = mkl_combine_train_test (KX_list(k_selec), ...
                 train_set, test_set, w(k_selec), mp_iokr_param.center);
             k = k + 1;
         end % if
-        fprintf ('Length of new kernel-list: %d\n', n_kx);
+        fprintf ('Length of new kernel-list: %d\n', k);
     end % if
     
     %% Parameter selection    

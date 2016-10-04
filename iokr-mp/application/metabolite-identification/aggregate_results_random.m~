@@ -1,0 +1,42 @@
+function [rank_perc, ranks, cand_num] = aggregate_results_random (inputKernel, cv_param, perc, inclExpCand)
+    %% Define the input directories
+    outputDirMP = ...
+        '/m/cs/scratch/kepaco/bache1/data/metabolite-identification/GNPS/results/mp-iokr/';
+    %% Set the parameter
+    param = struct ();
+    param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
+        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});
+
+    param.data_param.selection_param = struct ( ...
+        'strategy', 'random', 'perc', perc, 'inclExpCand', inclExpCand);
+    
+    param.data_param.inputKernel = inputKernel;
+    param.data_param.cv_param = cv_param;
+
+    %% Load the results of MP
+    n_rep = 20;
+    rank_perc = zeros (100, n_rep);
+    ranks     = zeros (4138, n_rep);
+    
+    for rep = 1:n_rep
+        disp (rep + 21)
+        
+        param_rep = param;
+        param_rep.data_param.repetition = rep;
+
+        settingHash = DataHash (struct (                                ...
+            'cv_param',        param_rep.data_param.cv_param,           ...
+            'selection_param', param_rep.data_param.selection_param,    ...
+            'repetition',      param_rep.data_param.repetition + 21,    ...
+            'input_kernel',    upper(param_rep.data_param.inputKernel), ...
+            'center',          param_rep.mp_iokr_param.center,          ...
+            'rev_iokr',        param_rep.mp_iokr_param.rev_iokr));
+
+        resFn = strcat (outputDirMP, '/', settingHash, '.mat'); 
+        fprintf ('%s exists %d\n', resFn, exist (resFn, 'file'));
+        
+        tmp = load (resFn); 
+        rank_perc(:, rep) = tmp.result.rank_perc(1:100);
+        ranks(:, rep) = tmp.result.ranks;
+    end % for
+end % function

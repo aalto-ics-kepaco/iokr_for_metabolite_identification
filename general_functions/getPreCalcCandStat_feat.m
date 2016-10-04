@@ -18,6 +18,9 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
 %       which is just a hash-value based on the underlying parameters. We
 %       need a file, database, etc. which associates a hash with a set of
 %       paramters.
+    sw_stats    = StopWatch ('Statistics outer fold');
+    sw_stats_cv = StopWatch ('Statistics inner fold');
+    sw_fold     = StopWatch ('One outer fold');
 
     % If precaclulated statistics are used, the following things have
     % to be loaded:
@@ -38,7 +41,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
         'is_debug_mode',   param.debug_param.isDebugMode);
     
     if (param_struct.is_debug_mode)
-        param_struct.('random_seed') = param.debug_param.isDebugMode;
+        param_struct.('random_seed') = param.debug_param.randomSeed;
         param_struct.('n_debug_set') = param.debug_param.n_debug_set;
     else
         param_struct.('random_seed') = NaN;
@@ -49,9 +52,6 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
     statHash = DataHash (param_struct);
     statFn = strcat (inOutDir, '/pre_calculated_stats/', statHash, '.mat');
     
-    cv    = getCVIndices (param.data_param.cv_param);
-    selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);
-    
     % Load respectively pre-calculated the statistics
     if (~ exist (statFn, 'file'))
         warning ('No pre-calculated statistics available. %s: No such file.', ...
@@ -59,6 +59,9 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
         disp ('Pre-calculate statistics');
 
         try 
+            cv    = getCVIndices (param.data_param.cv_param);
+            selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);
+            
             Y_C.setSelectionsOfCandidateSets (selec);
             
             % Create a new statistic file
@@ -69,15 +72,26 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
             
             matObj.repetition = param.data_param.repetition;
             matObj.center     = param.mp_iokr_param.center;
-            % Dimension: [1 x param.data_param.cv.outer.NumTestSets]
-            matObj.stats      = struct ();
-            % Dimension: [param.data_param.cv.inner.NumTestSets x cv.outer.NumTestSets]
-            matObj.stats_cv   = struct ();
 
-            for i = 1:cv.outer.NumTestSets
-                fprintf ('Outer fold: %d/%d\n', i, cv.outer.NumTestSets);
+            % Temporay variables
+            ker_center  = param.mp_iokr_param.center;
+            nOuterFolds = cv.outer.NumTestSets;
+            nInnerFolds = cv.inner{1}.NumTestSets;
+            
+            matObj.stats    = repmat (struct ('Mean_Psi_C_train', [], 'Cov_Psi_C_train', []), ...
+                [1, nOuterFolds]);
+            matObj.stats_cv = repmat (struct ('Mean_Psi_C_train_cv', [], 'Cov_Psi_C_train_cv', [], ...
+                'Mean_Psi_C_test_cv', [], 'Cov_Psi_C_test_cv', []), [nInnerFolds, nOuterFolds]);
+            
+
+            assert (all (cellfun (@(c) c.NumTestSets, cv.inner) == nInnerFolds), ...
+                'The nunber of inner folds must be equal for all outer folds.');
+            
+            for iOutFold = 1:nOuterFolds
+                sw_fold.start();
+                fprintf ('Outer fold: %d/%d\n', iOutFold, nOuterFolds);
                 
-                train_set = training_my (cv.outer, i);
+                train_set = training_my (cv.outer, iOutFold);
                                 
                 Y_train = Y(:, train_set);
                 
@@ -85,26 +99,22 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
                 
                 Y_C_train = Y_C.getSubset (train_set);
 
-                tic;
-                [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat ( ...
-                    Y_C_train, mean_Y_train, param.mp_iokr_param.center);     
-                toc;
-
-                if (i == 1)
-                    matObj.stats = struct ('Mean_Psi_C_train', Mean_Psi_C_train, ...
-                        'Cov_Psi_C_train', Cov_Psi_C_train);
-                else
-                    matObj.stats(1, i) = struct ('Mean_Psi_C_train', Mean_Psi_C_train, ...
-                        'Cov_Psi_C_train', Cov_Psi_C_train);
-                end % if
+                sw_stats.start();
+                % Train statistics
+                [Mean_Psi_C_train, Cov_Psi_C_train] = ...
+                    Compute_cov_mean_feat (Y_C_train, mean_Y_train, ker_center, true);   
+                sw_stats.stop();
+                sw_stats.showAvgTime();
                 
-                clear Mean_Psi_C_train Cov_Psi_C_train;
+                matObj.stats(1, iOutFold) = struct (      ...
+                    'Mean_Psi_C_train', Mean_Psi_C_train, ...
+                    'Cov_Psi_C_train', Cov_Psi_C_train);
 
-                for j = 1:cv.inner{i}.NumTestSets
-                    fprintf ('Inner fold: %d/%d\n', j, cv.inner{i}.NumTestSets);
+                for iInFold = 1:nInnerFolds
+                    fprintf ('Inner fold: %d/%d\n', iInFold, nInnerFolds);
                     
-                    train_set_cv = training_my (cv.inner{i}, j);
-                    test_set_cv  = test_my (cv.inner{i}, j);
+                    train_set_cv = training_my (cv.inner{iOutFold}, iInFold);
+                    test_set_cv  = test_my (cv.inner{iOutFold}, iInFold);
 
                     Y_train_cv = Y_train(:, train_set_cv);
                     Y_test_cv  = Y_train(:, test_set_cv);
@@ -115,38 +125,34 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
                     Y_C_train_cv = Y_C_train.getSubset (train_set_cv);
                     Y_C_test_cv  = Y_C_train.getSubset (test_set_cv);
 
-                    tic;
-                    [Mean_Psi_C_train_cv, Cov_Psi_C_train_cv] = Compute_cov_mean_feat ( ...
-                        Y_C_train_cv, mean_Y_train_cv, param.mp_iokr_param.center);     
-                    toc;
-                    tic;
-                    [Mean_Psi_C_test_cv, Cov_Psi_C_test_cv] = Compute_cov_mean_feat ( ...
-                        Y_C_test_cv, mean_Y_test_cv, param.mp_iokr_param.center);
-                    toc;
+                    sw_stats_cv.start();
+                    % Train / Test (cv) statistics
+                    [Mean_Psi_C_train_cv, Cov_Psi_C_train_cv] = Compute_cov_mean_feat (Y_C_train_cv, mean_Y_train_cv, ker_center, true);
+                    [Mean_Psi_C_test_cv, Cov_Psi_C_test_cv]   = Compute_cov_mean_feat (Y_C_test_cv, mean_Y_test_cv, ker_center, true);
+                    sw_stats_cv.stop();
+                    sw_stats_cv.showAvgTime();
 
-                    if ((i == 1) && (j == 1))
-                        matObj.stats_cv = struct ('Mean_Psi_C_train_cv', Mean_Psi_C_train_cv, ...
-                                                  'Mean_Psi_C_test_cv',  Mean_Psi_C_test_cv,  ...
-                                                  'Cov_Psi_C_train_cv',  Cov_Psi_C_train_cv,  ...
-                                                  'Cov_Psi_C_test_cv',   Cov_Psi_C_test_cv);
+                    if ((iOutFold == 1) && (iInFold == 1))
+                    matObj.stats_cv = struct (   ...
+                            'Mean_Psi_C_train_cv', Mean_Psi_C_train_cv, ...
+                            'Mean_Psi_C_test_cv',  Mean_Psi_C_test_cv,  ...
+                            'Cov_Psi_C_train_cv',  Cov_Psi_C_train_cv,  ...
+                            'Cov_Psi_C_test_cv',   Cov_Psi_C_test_cv);    
                     else
-                        matObj.stats_cv(j, i) = struct ('Mean_Psi_C_train_cv', Mean_Psi_C_train_cv, ...
-                                                        'Mean_Psi_C_test_cv',  Mean_Psi_C_test_cv,  ...
-                                                        'Cov_Psi_C_train_cv',  Cov_Psi_C_train_cv,  ...
-                                                        'Cov_Psi_C_test_cv',   Cov_Psi_C_test_cv);                                                       
+                        matObj.stats_cv(iInFold, iOutFold) = struct (   ...
+                            'Mean_Psi_C_train_cv', Mean_Psi_C_train_cv, ...
+                            'Mean_Psi_C_test_cv',  Mean_Psi_C_test_cv,  ...
+                            'Cov_Psi_C_train_cv',  Cov_Psi_C_train_cv,  ...
+                            'Cov_Psi_C_test_cv',   Cov_Psi_C_test_cv);                         
                     end % if
-
-                    clear Mean_Psi_C_train_cv Cov_Psi_C_train_cv ...
-                        train_set_cv test_set_cv ...
-                        Y_train_cv mean_Y_train_cv Y_C_train_cv ...
-                        Y_test_cv mean_Y_test_cv Y_C_test_cv;
                 end % for
+                
+                sw_fold.stop();
+                sw_fold.showAvgTime();
+                
+                fprintf ('Remaining time (estimate): %.3fh\n', ...
+                    ((nOuterFolds - iOutFold) * sw_fold.getAverageTime()) / 3600);
             end % for
-            
-            % Check post-condition
-            assert (all (size (matObj.stats) == [1, cv.outer.NumTestSets]));
-            cellfun (@(c) assert ( ...
-                all (size (matObj.stats_cv) == [c.NumTestSets, cv.outer.NumTestSets])), cv.inner);
                         
             clear matObj;
         catch me
@@ -161,9 +167,9 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
         end % try      
     end % if
     
-    disp (['Load pre-caculated statistics from file: ', statFn]);
-
-    matObj = matfile (statFn);
-    
-    Y_C.setSelectionsOfCandidateSets (matObj.selec);
+    if (nargout > 0)
+        disp (['Load pre-caculated statistics from file: ', statFn]);
+        matObj = matfile (statFn);
+        Y_C.setSelectionsOfCandidateSets (matObj.selec);
+    end % if
 end % function

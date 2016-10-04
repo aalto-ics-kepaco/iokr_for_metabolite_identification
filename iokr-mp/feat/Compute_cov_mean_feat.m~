@@ -54,12 +54,16 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
         end % if
         
         Y_Cj = full (Y_C_train.getCandidateSet(idx, 1, 'data'));       
-        d = size (Y_Cj, 1);
         
+        [d, nj] = size (Y_Cj);
         assert (d == numel (mean_Y), ...
             'Dimension of the "data" does not match the dimension of the mean vector.')
-        assert (size (Y_Cj, 2) == nj);
-        
+        if (nj == 0)
+            % If a candidate set does not contain any candidate no mean and
+            % no covariance matrice needs to be calculated.
+            continue;
+        end % if 
+
         % centering and normalization of the feature vectors
         Y_Cjn = norma(Y_Cj, mean_Y, ker_center);
 

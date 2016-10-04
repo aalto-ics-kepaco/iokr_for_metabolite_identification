@@ -1,5 +1,6 @@
-function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( ...
-    KX_train_list, Y_train, Y_C_train, opt_param, mp_iokr_param, data_param, debug_param)
+function [ lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( ...
+    KX_train_list, Y_train, Y_C_train, gamma_opt, ...
+    opt_param, mp_iokr_param, data_param, debug_param)
 %======================================================
 % DESCRIPTION:
 % Hyperparameter selection for MP-IOKR with reverse IOKR in the case of a feature
@@ -46,7 +47,6 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
         sw_calculate_mp_error         = StopWatch ('Calculate mp-error');
         sw_find_hyper_parameter       = StopWatch ('Find hyper-parameter (Train_reverse_IOKR_feat_reverse_feat & Calculate mp-error)');
         sw_whole_loop                 = StopWatch ('WHOLE LOOP');
-        sw_select_param_reverse_IOKR  = StopWatch ('Select_param_reverse_IOKR (gamma)');
     end % if 
 
     [d,n_train] = size(Y_train);
@@ -54,16 +54,6 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
     % Training output feature vectors
     mean_Y_train = mean(Y_train,2);
     Psi_train = norma(Y_train, mean_Y_train, mp_iokr_param.center);
-    
-    % Selection of the regularization parameter(s) of reverse IOKR
-    if (debug_param.verbose) ; sw_select_param_reverse_IOKR.start() ; end % if
-    
-    gamma_opt = Select_param_reverse_IOKR(KX_train_list, Psi_train, opt_param.val_gamma);
-    
-    if (debug_param.verbose) 
-        sw_select_param_reverse_IOKR.stop();
-        sw_select_param_reverse_IOKR.showAvgTime();
-    end % if
     
     % Selection of the regularization parameter of MP-IOKR using an inner
     % cross-validation experiment
@@ -114,11 +104,11 @@ function [ gamma_opt, lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( 
         % vectors
         if (data_param.usePreCalcStat)             
             % Train
-            Mean_Psi_C_train_cv = data_param.stats_cv(1, foldIdx).Mean_Psi_C_train_cv;
-            Cov_Psi_C_train_cv = data_param.stats_cv(1, foldIdx).Cov_Psi_C_train_cv;
+            Mean_Psi_C_train_cv = data_param.stats_cv(foldIdx, 1).Mean_Psi_C_train_cv;
+            Cov_Psi_C_train_cv = data_param.stats_cv(foldIdx, 1).Cov_Psi_C_train_cv;
             % Test
-            Mean_Psi_C_test_cv = data_param.stats_cv(1, foldIdx).Mean_Psi_C_test_cv;
-            Cov_Psi_C_test_cv = data_param.stats_cv(1, foldIdx).Cov_Psi_C_test_cv;
+            Mean_Psi_C_test_cv = data_param.stats_cv(foldIdx, 1).Mean_Psi_C_test_cv;
+            Cov_Psi_C_test_cv = data_param.stats_cv(foldIdx, 1).Cov_Psi_C_test_cv;
             
             clear stats_cv;
         else

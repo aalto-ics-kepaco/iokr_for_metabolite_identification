@@ -45,6 +45,11 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     
     %% Load data 
     % ... input-kernels for the training examples
+    if (param.debug_param.isDebugMode)
+        % Lets reduce the size of the UNIMKL a bit. This is useful if we
+        % want to debug the 'separate' kernel combination.
+        param.data_param.availInputKernels = {'PPKR', 'NSF', 'CEC', 'CPJ'};
+    end % if
     [KX_list, param] = loadInputKernelsIntoList (inputDir, param);
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
@@ -147,7 +152,7 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         % NOTE: The selec_ property of Y_C will be modified according to
         %       the selection defined by PARAM.DATA_PARAM.SELECTION_PARAM.
         tic;
-        matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, outputDir);
+        matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inputDir);
         fprintf ('Loading / pre-calculating of the candidate statistics took %.3fs\n', toc);
         
         param.data_param.cv         = matObj.cv;
@@ -182,8 +187,8 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
             % By loading the covariance and mean vectors at this place, we
             % save some memory, as only the data is loaded which is needed.
             data_param_fold.cv       = param.data_param.cv.inner{foldIdx};
-            data_param_fold.stats    = param.data_param.matObj.stats(foldIdx, 1);
-            data_param_fold.stats_cv = param.data_param.matObj.stats_cv(foldIdx, :);
+            data_param_fold.stats    = param.data_param.matObj.stats(1, foldIdx);
+            data_param_fold.stats_cv = param.data_param.matObj.stats_cv(:, foldIdx);
         end % if
         
         % Calculate the scores for each candidate corresponding the current
@@ -207,14 +212,18 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     assert (all (isnan (ranks) == (~ eval_set)), ...
         'The examples without propper candidate set and examples without rank (due to the absence if a candidate set) must be equal.');
     
+    %% Calculate rank percentages
     candNum = arrayfun (@(idx) Y_C.getCandidateSet (idx, 0, 'num'), 1:Y_C.getNumberOfExamples());
     rankPerc = getRankPerc (ranks, max (candNum));
     
     %% Store results
     % FIXME: This result should be stored using the hash value for the
     % corresponding setting. 
+    candNumSel = arrayfun (@(idx) Y_C.getCandidateSet (idx, 1, 'num'), 1:Y_C.getNumberOfExamples());
+    
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
-        'debug_info', debug_info, 'opt_param', param.opt_param); %#ok<NASGU>
+        'cand_num_sel', candNumSel, 'debug_info', debug_info, 'opt_param', param.opt_param, ...
+        'selection_param', param.data_param.selection_param); %#ok<NASGU>
     
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...
@@ -225,5 +234,6 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         'rev_iokr',        param.mp_iokr_param.rev_iokr));
     save (strcat (outputDir, '/', settingHash, '.mat'), 'result', '-v7.3');
     
+    disp (rankPerc([1, 5, 10, 20]));
     disp ('! Ready !');
 end % function 

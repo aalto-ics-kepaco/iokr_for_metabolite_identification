@@ -93,12 +93,6 @@ function [selec, debugVec] = getCandidateSelection (candidateSets, id, param, ..
                     selec = cell (numExamples, 1);
 
                     for idx = 1:numExamples;
-                        if (isnan (candidateSets.getCandidateSet (idx, 0, 'num')))
-                            selec{idx} = NaN;
-                            
-                            continue;
-                        end % if
-                        
                         selec{idx} = candidateSets.findExampleInCandidateSet (idx, id(idx));
                         
                         % We want to select everything _but_ the examples
@@ -194,7 +188,7 @@ function [selec, debugVec] = getCandidateSelection (candidateSets, id, param, ..
                     numCand      = numCand + numCandForExamples;
                     numSelecCand = numSelecCand + sum (selec{idx});
                     
-                    assert (sum (selec{idx}) <= (param.maxNumCand + param.inclExpCand));
+                    assert (sum (selec{idx}) <= (100 + param.inclExpCand));
                 end % for 
                 
                 fprintf ('Number of all the candidates (NOT unique ones): %d\n', numCand);
@@ -211,8 +205,6 @@ function [selec, debugVec] = getCandidateSelection (candidateSets, id, param, ..
         numCandPerSet = arrayfun (@(idx) candidateSets.getCandidateSet (idx, 0, 'num'), 1:candidateSets.getNumberOfExamples());
         numSelectionsPerSet = cellfun (@(c) size(c, 2), selec);
         assert (all (numSelectionsPerSet(~ isnan (numCandPerSet)) == numCandPerSet(~ isnan (numCandPerSet))'));
-        
-        assert (all (isnan (numCandPerSet') == cellfun (@(c) any (isnan (c)), selec)));
         
         % Write out selection if needed
         if (strcmp (modeStr, 'cache'))

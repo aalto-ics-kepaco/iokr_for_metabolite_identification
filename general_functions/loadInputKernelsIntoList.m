@@ -5,8 +5,6 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
             disp (['Evaluation using a single kernel: ', param.data_param.inputKernel]);
 
             KX_list = { loadKernel(strcat (inputDir, '/input_kernels/', upper (param.data_param.inputKernel), '.mat')) };
-%             warning ('Configured to read .txt kernel-files!');
-%             KX_list = { loadKernel(strcat (inputDir, '/input_kernels/', upper (param.data_param.inputKernel), '.txt'), 0) };
 
             % If a single kernel is used, than we force the "mkl" option to
             % be 'unimkl'. The weight for the kernel will be 1.
@@ -16,9 +14,6 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
 
             KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/input_kernels/', kernelName, '.mat')), ...
                 upper (param.data_param.availInputKernels), 'UniformOutput', false);
-%             KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/input_kernels/', kernelName, '.txt'), 0), ...
-%                 upper (param.data_param.availInputKernels), 'UniformOutput', false);
-%             warning ('Configured to read .txt kernel-files!');
 
             param.mp_iokr_param.mkl = lower (param.data_param.inputKernel);
         otherwise
@@ -27,3 +22,10 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
                 param.data_param.inputKernel);
     end % switch
 end % function
+
+%             warning ('Configured to read .txt kernel-files!');
+%             KX_list = { loadKernel(strcat (inputDir, '/input_kernels/', upper (param.data_param.inputKernel), '.txt'), 0) };
+
+%             KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/input_kernels/', kernelName, '.txt'), 0), ...
+%                 upper (param.data_param.availInputKernels), 'UniformOutput', false);
+%             warning ('Configured to read .txt kernel-files!');

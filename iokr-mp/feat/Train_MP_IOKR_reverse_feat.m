@@ -20,7 +20,6 @@ function [ C ] = Train_MP_IOKR_reverse_feat(KX_train_list, Psi_train, M, Mean_Ps
 % C:                    regression model
 %
 %======================================================
-
     n_kx = length(KX_train_list); % number of input kernels
     n_train = size(Psi_train,2);
     
@@ -39,5 +38,4 @@ function [ C ] = Train_MP_IOKR_reverse_feat(KX_train_list, Psi_train, M, Mean_Ps
     AAt = A1 * A1' + M * Cov_Psi_C_train * M';
     
     C = PsiAt / (lambda * eye(n_kx*n_train) + KX_train * AAt);
-
 end

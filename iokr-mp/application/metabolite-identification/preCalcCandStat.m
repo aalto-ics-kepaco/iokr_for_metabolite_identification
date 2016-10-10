@@ -1,13 +1,20 @@
-function preCalcCandStat (param)
+function preCalcCandStat (param, useAllForTrain)
     %% Set parameter
     if (nargin < 1)
         param = struct ();
+    end % if
+    if (nargin < 2)
+        useAllForTrain = false;
     end % if
         
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});
     %% Load data    
     inputDir = '/scratch/cs/kepaco/bache1/data/metabolite-identification/GNPS/';
+    inOutDir = strcat (inputDir, '/pre_calculated_stats/');
+    if (param.debug_param.isDebugMode)
+        inOutDir = strcat (inOutDir, '/debug/');
+    end % if
     
     % Fingerprints
     Y = load (strcat (inputDir, '/fingerprints/fp.mat'));
@@ -66,11 +73,17 @@ function preCalcCandStat (param)
     
     %% Pre-calculate statistics
     % Cross-validation settings
-    cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold), ...
-                       'inner', struct ('nFolds', param.opt_param.nInnerFolds));                       
+    if (useAllForTrain)
+        cv_param = struct ('nObservations', numel (ind_fold),               ...
+                           'outer', struct ('type', 'random', 'nFolds', 1), ...
+                           'inner', struct ('nFolds', param.opt_param.nInnerFolds));   
+    else
+        cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold), ...
+                           'inner', struct ('nFolds', param.opt_param.nInnerFolds));                       
+    end % if
     param.data_param.cv_param = cv_param;
     
     tic;
-    getPreCalcCandStat_feat (Y, Y_C, inchis, param, inputDir);
+    getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir);
     fprintf ('Loading / pre-calculating of the candidate statistics took %.3fs\n', toc);
 end % if

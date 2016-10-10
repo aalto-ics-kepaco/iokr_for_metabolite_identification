@@ -21,4 +21,3 @@ function [ Psi_pred ] = Prediction_MP_IOKR_reverse_feat(KX_train_test_list, C)
     Psi_pred = C * KX_train_test;
 
 end
-

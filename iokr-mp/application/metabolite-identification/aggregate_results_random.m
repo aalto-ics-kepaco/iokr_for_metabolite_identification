@@ -16,7 +16,7 @@ function [rank_perc, ranks, cand_num] = aggregate_results_random (inputKernel, c
     %% Load the results of MP
     warning ('We load only the repetitions which contain "cand_num_sel".');
     
-    n_rep = 20;
+    n_rep = 42;
     rank_perc = zeros (100, n_rep);
     ranks     = zeros (4138, n_rep);
     if (nargout > 2)
@@ -27,7 +27,8 @@ function [rank_perc, ranks, cand_num] = aggregate_results_random (inputKernel, c
         disp (rep + 21)
         
         param_rep = param;
-        param_rep.data_param.repetition = rep + 21;
+%         param_rep.data_param.repetition = rep + 21;
+        param_rep.data_param.repetition = rep;
 
         settingHash = DataHash (struct (                                ...
             'cv_param',        param_rep.data_param.cv_param,           ...
@@ -47,5 +48,8 @@ function [rank_perc, ranks, cand_num] = aggregate_results_random (inputKernel, c
         if (nargout > 2)
             cand_num(:, rep) = tmp.result.cand_num_sel;
         end % if    
+        
+        assert (all ( ...
+            getRankPerc (tmp.result.ranks, tmp.result.cand_num) == tmp.result.rank_perc));
     end % for
 end % function

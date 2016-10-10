@@ -1,14 +1,15 @@
-function rankPerc = getRankPerc (ranks, maxCandNum)
+function rankPerc = getRankPerc (ranks, candNum)
 %% GETRANKPERC Calculate percentage for the different rankings.
 %    INPUT:
 %       ranks         ranking for each molecule
-%       maxCandNum    maximum number of candidates for a molecule
+%       candNum       number of candidates for each example
 %
 %    OUTPUT:
-%       rankPerc     percantages for rank 1 - 100
-    nValidRanks = sum (~ isnan (ranks));
+%       rankPerc     top k accuracy for each k from 1:max(candNum)
+    hasRank = (~ isnan (ranks));
+    nValidRanks = sum (hasRank);
 
-    nel = hist (ranks, 1:max(maxCandNum));
+    nel = hist (ranks(hasRank), 1:max(candNum(hasRank)));
     rankPerc = cumsum(nel)';
     rankPerc = rankPerc / nValidRanks * 100;
 end % function

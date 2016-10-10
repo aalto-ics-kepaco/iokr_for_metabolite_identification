@@ -67,10 +67,12 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     train_set = find (data_param.train_set);
     test_set  = find (data_param.test_set);
 
-    KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
+    
     
     %% Learning kernel weights with Multiple Kernel Learning  
     if (debug_param.verbose) ; sw_mkl_weights.start() ; end % if
+    
+    KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
     
     w = mkl_weight(mp_iokr_param.mkl, KX_list_train, normmat(Y_train'*Y_train));
     
@@ -81,7 +83,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         
     clear KX_list_train
     
-    %% Centering and normalization of input kernel
+    %% Centering, normalization and MKL of the input-kernels
     if (debug_param.verbose) ; sw_input_kernel_processing.start() ; end % if
     
     n_kx = length(KX_list);
@@ -118,8 +120,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         Y_C_train = Y_C.getSubset (train_set);
     end % if
     
-    %%
-    % Selection of the regularization parameter(s) of reverse IOKR
+    %% Selection of the regularization parameter(s) of reverse IOKR
     if (debug_param.verbose) ; sw_select_param_reverse_IOKR.start() ; end % if
     
     gamma_opt = Select_param_reverse_IOKR(KX_train_list, Psi_train, opt_param.val_gamma);

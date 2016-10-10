@@ -25,6 +25,5 @@ function [ M ] = Train_reverse_IOKR_feat( Psi_train, vec_gamma )
     end
     
     M = cell2mat(Mc);
-
 end
 

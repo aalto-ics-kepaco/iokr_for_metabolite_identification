@@ -1,4 +1,5 @@
-function [ KX_train, KX_train_test ] = mkl_combine_train_test( KX_list, train_set, test_set, w, ker_center)
+function [KX_train, KX_train_test, KX_test] = mkl_combine_train_test ( ...
+    KX_list, train_set, test_set, w, ker_center)
 %======================================================
 % DESCRIPTION:
 % Kernel combination using the weights learnt with some MKL algorithm
@@ -25,12 +26,25 @@ function [ KX_train, KX_train_test ] = mkl_combine_train_test( KX_list, train_se
     % Combination of the kernels
     KX_train = zeros(n_train,n_train);
     KX_train_test = zeros(n_train,n_test);
+    
+    if (nargout > 2)
+        KX_test = zeros (n_test, n_test);
+    end % if
+    
     for i = 1:n_kx
         % Centering and normalization
-        [KX_train_nc, KX_train_test_nc] = input_kernel_center_norm( KX_list{i}, train_set, test_set, ker_center);
-        KX_train = KX_train + w(i) * KX_train_nc;
-        KX_train_test = KX_train_test + w(i) * KX_train_test_nc;
+        if (nargout <= 2)
+            [KX_train_nc, KX_train_test_nc] = input_kernel_center_norm ( ...
+                KX_list{i}, train_set, test_set, ker_center);
+            KX_train = KX_train + w(i) * KX_train_nc;
+            KX_train_test = KX_train_test + w(i) * KX_train_test_nc;
+        else
+            [KX_train_nc, KX_train_test_nc, KX_test_nc] = input_kernel_center_norm ( ...
+                KX_list{i}, train_set, test_set, ker_center);
+            KX_train      = KX_train + w(i) * KX_train_nc;
+            KX_train_test = KX_train_test + w(i) * KX_train_test_nc;
+            KX_test       = KX_test + w(i) * KX_test_nc;
+        end % if
     end
-
 end
 

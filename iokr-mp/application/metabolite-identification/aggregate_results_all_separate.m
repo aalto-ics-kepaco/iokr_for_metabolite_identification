@@ -1,4 +1,4 @@
-function [rank_perc, ranks] = aggregate_results_all (inputKernel, cv_param, inclExpCand)
+function [rank_perc, ranks] = aggregate_results_all_separate (inputKernel, cv_param, inclExpCand)
     %% Define the input directories
     outputDirMP = ...
         '/m/cs/scratch/kepaco/bache1/data/metabolite-identification/GNPS/results/mp-iokr/';
@@ -6,6 +6,7 @@ function [rank_perc, ranks] = aggregate_results_all (inputKernel, cv_param, incl
     param = struct ();
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});
+    param.mp_iokr_param.rev_iokr = 'separate';
 
     param.data_param.selection_param = struct ( ...
         'strategy', 'all', 'inclExpCand', inclExpCand);
@@ -26,9 +27,12 @@ function [rank_perc, ranks] = aggregate_results_all (inputKernel, cv_param, incl
         'rev_iokr',        param.mp_iokr_param.rev_iokr));
 
     resFn = strcat (outputDirMP, '/', settingHash, '.mat'); 
-%         fprintf ('%s exists %d\n', resFn, exist (resFn, 'file'));
+    fprintf ('%s exists %d\n', resFn, exist (resFn, 'file'));
 
     tmp = load (resFn); 
-    rank_perc(:, rep) = tmp.result.rank_perc(1:100);
-    ranks(:, rep) = tmp.result.ranks;
+    rank_perc(:) = tmp.result.rank_perc(1:100);
+    ranks(:) = tmp.result.ranks;
+    
+    assert (all ( ...
+        getRankPerc (tmp.result.ranks, tmp.result.cand_num) == tmp.result.rank_perc));
 end % function

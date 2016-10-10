@@ -41,12 +41,16 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
     end % if
     
     % Set the defaults values for the parameter in PARAM if needed.
-%     fprintf ('Random seed: %d\n', param.debug_param.randomSeed);
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
         { 'debug_param', 'opt_param', 'iokr_param', 'data_param' });    
       
     %% Load data 
     % ... input-kernels for the training examples
+    if (param.debug_param.isDebugMode)
+        % Lets reduce the size of the UNIMKL a bit. This is useful if we
+        % want to debug the 'separate' kernel combination.
+        param.data_param.availInputKernels = {'PPKR', 'NSF', 'CEC', 'CPJ'};
+    end % if
     [KX_list, param] = loadInputKernelsIntoList (inputDir, param);
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
@@ -174,8 +178,9 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
     assert (all (isnan (ranks) == (~ eval_set)), ...
         'The examples without propper candidate set and examples without rank (due to the absence if a candidate set) must be equal.');
     
+    %% Calculate rank percentages
     candNum = arrayfun (@(idx) Y_C.getCandidateSet (idx, 0, 'num'), 1:Y_C.getNumberOfExamples());
-    rankPerc = getRankPerc (ranks, max (candNum));
+    rankPerc = getRankPerc (ranks, candNum);
     
     %% Store results
     % FIXME: The hash-values should be associated with a certain setting
@@ -190,5 +195,6 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
         'cv_type',         param.iokr_param.cv_type));
     save (strcat (outputDir, '/', settingHash, '.mat'), 'result', '-v7.3');
     
+    disp (rankPerc([1, 5, 10, 20]));
     disp ('! Ready !');
 end % function 

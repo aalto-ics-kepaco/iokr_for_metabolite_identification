@@ -1,4 +1,5 @@
-function [ K_train_nc, K_train_test_nc] = input_kernel_center_norm( K, train_set, test_set, ker_center)
+function [ K_train_nc, K_train_test_nc, K_test_nc] = input_kernel_center_norm ( ...
+    K, train_set, test_set, ker_center)
 %======================================================
 % DESCRIPTION:
 % Centering and normalization of a Gram matrix
@@ -29,13 +30,18 @@ function [ K_train_nc, K_train_test_nc] = input_kernel_center_norm( K, train_set
         K_train_test_c = center(K_train_test, mean_K_train, ker_center, mean_K_train', mean_K_train_test);
 
         % Normalization
-        K_train_nc = normmat(K_train_c);
+        K_train_nc      = normmat(K_train_c);
         K_train_test_nc = K_train_test_c ./ sqrt(diag(K_train_c) * diag(K_test_c)');
+        if (nargout > 2)
+            K_test_nc = normmat (K_test_c);
+        end % if
         
     else % because input kernels are already normalized in our application
         K_train_nc = K_train;
         K_train_test_nc = K_train_test;
+        if (nargout > 2)
+            K_test_nc = normmat (K_test);
+        end % if
     end
-
 end
 

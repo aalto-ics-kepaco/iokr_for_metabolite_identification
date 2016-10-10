@@ -43,5 +43,8 @@ function [rank_perc, ranks, cand_num] = aggregate_results_maxElement (inputKerne
         if (nargout > 2)
             cand_num(:, rep) = tmp.result.cand_num_sel;
         end % if    
+        
+        assert (all ( ...
+            getRankPerc (tmp.result.ranks, tmp.result.cand_num) == tmp.result.rank_perc));
     end % for
 end % function

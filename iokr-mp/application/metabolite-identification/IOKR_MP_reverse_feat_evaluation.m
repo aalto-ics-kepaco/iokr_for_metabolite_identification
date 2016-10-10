@@ -50,7 +50,7 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         % want to debug the 'separate' kernel combination.
         param.data_param.availInputKernels = {'PPKR', 'NSF', 'CEC', 'CPJ'};
     end % if
-    [KX_list, param] = loadInputKernelsIntoList (inputDir, param);
+    [KX_list, param] = loadInputKernelsIntoList (strcat (inputDir, '/input_kernels/'), param);
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
             'No kernel loaded.');
@@ -113,7 +113,6 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     end % if
     
     % ... candidate sets 
-    % ... candidate sets 
     mf_corres = load (strcat (inputDir, '/candidates/matching_mf_train.txt'));
     if (param.debug_param.isDebugMode)
         mf_corres = mf_corres(param.debug_param.debug_set);
@@ -152,7 +151,7 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         % NOTE: The selec_ property of Y_C will be modified according to
         %       the selection defined by PARAM.DATA_PARAM.SELECTION_PARAM.
         tic;
-        matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inputDir);
+        matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, strcat (inputDir, '/pre_calculated_stats/'));
         fprintf ('Loading / pre-calculating of the candidate statistics took %.3fs\n', toc);
         
         param.data_param.cv         = matObj.cv;
@@ -214,7 +213,7 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     
     %% Calculate rank percentages
     candNum = arrayfun (@(idx) Y_C.getCandidateSet (idx, 0, 'num'), 1:Y_C.getNumberOfExamples());
-    rankPerc = getRankPerc (ranks, max (candNum));
+    rankPerc = getRankPerc (ranks, candNum);
     
     %% Store results
     % FIXME: This result should be stored using the hash value for the

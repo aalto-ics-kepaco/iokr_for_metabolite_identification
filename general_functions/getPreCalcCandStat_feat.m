@@ -1,4 +1,4 @@
-function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
+function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_not_modify_Y_C)
 %% PRECALCCANDSTAD_FEAT preculates the candidate statistics given a set of parameters
 %
 %       PARAM.TMP_PARAM.CV must correspont to GETCVINDICES (PARAM.DATA_PARAM.CV)
@@ -18,9 +18,18 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
 %       which is just a hash-value based on the underlying parameters. We
 %       need a file, database, etc. which associates a hash with a set of
 %       paramters.
-    sw_stats    = StopWatch ('Statistics outer fold');
-    sw_stats_cv = StopWatch ('Statistics inner fold');
-    sw_fold     = StopWatch ('One outer fold');
+    if (nargin < 6)
+        warning ('Please fix this in the future: do_not_modify_Y_C');
+        do_not_modify_Y_C = false;
+    end % if
+
+    sw_stats    = StopWatch ('Statistics outer fold (WALL)');
+    sw_stats_cv = StopWatch ('Statistics inner fold (WALL)');
+    sw_fold     = StopWatch ('One outer fold (WALL)');
+    
+    swc_stats    = StopWatchCPUTime ('Statistics outer fold (CPU)');
+    swc_stats_cv = StopWatchCPUTime ('Statistics inner fold (CPU)');
+    swc_fold     = StopWatchCPUTime ('One outer fold (CPU)');
 
     % If precaclulated statistics are used, the following things have
     % to be loaded:
@@ -50,7 +59,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
     
     % Create filename based on the settings
     statHash = DataHash (param_struct);
-    statFn = strcat (inOutDir, '/pre_calculated_stats/', statHash, '.mat');
+    statFn = strcat (inOutDir, '/', statHash, '.mat');
     
     % Load respectively pre-calculated the statistics
     if (~ exist (statFn, 'file'))
@@ -100,11 +109,14 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
                 Y_C_train = Y_C.getSubset (train_set);
 
                 sw_stats.start();
+                swc_stats.start();
                 % Train statistics
                 [Mean_Psi_C_train, Cov_Psi_C_train] = ...
                     Compute_cov_mean_feat (Y_C_train, mean_Y_train, ker_center, true);   
                 sw_stats.stop();
+                swc_stats.stop();
                 sw_stats.showAvgTime();
+                swc_stats.showAvgTime();
                 
                 matObj.stats(1, iOutFold) = struct (      ...
                     'Mean_Psi_C_train', Mean_Psi_C_train, ...
@@ -170,6 +182,9 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir)
     if (nargout > 0)
         disp (['Load pre-caculated statistics from file: ', statFn]);
         matObj = matfile (statFn);
+        
+        if (do_not_modify_Y_C) ; return ; end % if
+        
         Y_C.setSelectionsOfCandidateSets (matObj.selec);
     end % if
 end % function

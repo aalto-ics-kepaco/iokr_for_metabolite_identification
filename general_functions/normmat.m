@@ -23,6 +23,5 @@ function Kn = normmat( K, D1, D2 )
     else
         Kn = K ./ sqrt(D1 * D2');
     end
-
 end
 

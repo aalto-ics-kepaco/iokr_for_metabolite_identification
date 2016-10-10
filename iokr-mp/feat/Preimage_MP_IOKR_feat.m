@@ -30,6 +30,6 @@ function [ scores ] = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, ke
         
         Y_Cj = full (Y_C_test.getCandidateSet (j, 0, 'data'));             
         Psi_Cj = norma(Y_Cj, mean_Y_train, ker_center); %  centering and normalization
-        scores{j} = Psi_pred(:,j)' * Psi_Cj;         
+        scores{j} = Psi_pred(:,j)' * Psi_Cj;
     end
 end

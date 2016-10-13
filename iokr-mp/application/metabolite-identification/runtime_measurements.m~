@@ -102,9 +102,6 @@ function runtime_measurements (inputDir, param, algorithm)
     n_kx = numel (KX_list);
     fprintf ('Number of input-kernels: %d\n', n_kx);
     
-    % Centering, normalization and MKL of the input-kernels
-    w = repmat (1 / n_kx, [n_kx, 1]);
-    
     switch param.mp_iokr_param.rev_iokr
         case 'joint' 
             % Computation of the combined input kernel
@@ -128,9 +125,6 @@ function runtime_measurements (inputDir, param, algorithm)
     
     swc_input_kernel_processing.stop();
     sw_input_kernel_processing.stop();
-    swc_input_kernel_processing.showAvgTime();
-    sw_input_kernel_processing.showAvgTime();
-
     
     % Set seed in order to be able to reproduce the settings.
     % By default this is set to 'shuffle'. This means, that the current

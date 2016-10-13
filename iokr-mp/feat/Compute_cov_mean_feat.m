@@ -61,12 +61,13 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
         assert (size (Y_Cj, 2) == nj);
         
         % centering and normalization of the feature vectors
-        Y_Cjn = norma(Y_Cj, mean_Y, ker_center);
+        Psi_Cjn = norma(Y_Cj, mean_Y, ker_center);
+        clear Y_Cj;
 
         % computation of the mean and the covariance
-        Mean_Psi_C_train(:,idx) = mean(Y_Cjn,2);
-        Cov_Psi_C_train = Cov_Psi_C_train + 1/nj*(Y_Cjn ...
-            - repmat(Mean_Psi_C_train(:,idx),1,nj))*(Y_Cjn - repmat(Mean_Psi_C_train(:,idx),1,nj))';
+        Mean_Psi_C_train(:,idx) = mean(Psi_Cjn,2);
+        Cov_Psi_C_train = Cov_Psi_C_train + 1/nj*(Psi_Cjn ...
+            - repmat(Mean_Psi_C_train(:,idx),1,nj))*(Psi_Cjn - repmat(Mean_Psi_C_train(:,idx),1,nj))';
     end
     
     if (verbose)

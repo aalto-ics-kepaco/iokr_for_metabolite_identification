@@ -132,17 +132,14 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_n
                     Y_train_cv = Y_train(:, train_set_cv);
                     Y_test_cv  = Y_train(:, test_set_cv);
 
-                    mean_Y_train_cv = mean (Y_train_cv, 2);
-                    mean_Y_test_cv  = mean (Y_test_cv, 2);
-
                     Y_C_train_cv = Y_C_train.getSubset (train_set_cv);
                     Y_C_test_cv  = Y_C_train.getSubset (test_set_cv);
 
                     sw_stats_cv.start();
                     swc_stats_cv.start();
                     % Train / Test (cv) statistics
-                    [Mean_Psi_C_train_cv, Cov_Psi_C_train_cv] = Compute_cov_mean_feat (Y_C_train_cv, mean_Y_train_cv, ker_center, true);
-                    [Mean_Psi_C_test_cv, Cov_Psi_C_test_cv]   = Compute_cov_mean_feat (Y_C_test_cv, mean_Y_test_cv, ker_center, true);
+                    [Mean_Psi_C_train_cv, Cov_Psi_C_train_cv] = Compute_cov_mean_feat (Y_C_train_cv, mean_Y_train, ker_center, true);
+                    [Mean_Psi_C_test_cv, Cov_Psi_C_test_cv]   = Compute_cov_mean_feat (Y_C_test_cv, mean_Y_test, ker_center, true);
                     sw_stats_cv.stop();
                     swc_stats_cv.stop();
                     sw_stats_cv.showAvgTime();

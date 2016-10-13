@@ -128,10 +128,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_n
                     
                     train_set_cv = training_my (cv.inner{iOutFold}, iInFold);
                     test_set_cv  = test_my (cv.inner{iOutFold}, iInFold);
-
-                    Y_train_cv = Y_train(:, train_set_cv);
-                    Y_test_cv  = Y_train(:, test_set_cv);
-
+                    
                     Y_C_train_cv = Y_C_train.getSubset (train_set_cv);
                     Y_C_test_cv  = Y_C_train.getSubset (test_set_cv);
 

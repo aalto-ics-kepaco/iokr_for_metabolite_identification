@@ -1,10 +1,10 @@
-function preCalcCandStat (param, useAllForTrain)
+function preCalcCandStat (param, useAllExamplesForTraining)
     %% Set parameter
     if (nargin < 1)
         param = struct ();
     end % if
     if (nargin < 2)
-        useAllForTrain = false;
+        useAllExamplesForTraining = false;
     end % if
         
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
@@ -73,7 +73,7 @@ function preCalcCandStat (param, useAllForTrain)
     
     %% Pre-calculate statistics
     % Cross-validation settings
-    if (useAllForTrain)
+    if (useAllExamplesForTraining)
         cv_param = struct ('nObservations', numel (ind_fold),               ...
                            'outer', struct ('type', 'random', 'nFolds', 1), ...
                            'inner', struct ('nFolds', param.opt_param.nInnerFolds));   

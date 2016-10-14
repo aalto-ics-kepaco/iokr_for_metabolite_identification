@@ -101,7 +101,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_n
                 swc_fold.start();
                 fprintf ('Outer fold: %d/%d\n', iOutFold, nOuterFolds);
                 
-                train_set = training_my (cv.outer, iOutFold);
+                train_set = training_my (cv.outer, iOutFold);                
                                 
                 Y_train = Y(:, train_set);
                 
@@ -136,7 +136,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_n
                     swc_stats_cv.start();
                     % Train / Test (cv) statistics
                     [Mean_Psi_C_train_cv, Cov_Psi_C_train_cv] = Compute_cov_mean_feat (Y_C_train_cv, mean_Y_train, ker_center, true);
-                    [Mean_Psi_C_test_cv, Cov_Psi_C_test_cv]   = Compute_cov_mean_feat (Y_C_test_cv, mean_Y_test, ker_center, true);
+                    [Mean_Psi_C_test_cv, Cov_Psi_C_test_cv]   = Compute_cov_mean_feat (Y_C_test_cv, mean_Y_train, ker_center, true);
                     sw_stats_cv.stop();
                     swc_stats_cv.stop();
                     sw_stats_cv.showAvgTime();

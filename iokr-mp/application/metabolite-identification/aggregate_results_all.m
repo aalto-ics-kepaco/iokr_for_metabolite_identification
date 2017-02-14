@@ -1,7 +1,7 @@
-function [rank_perc, ranks] = aggregate_results_all (inputKernel, cv_param, inclExpCand)
+function [rank_perc, ranks] = aggregate_results_all (inputKernel, outputDirMP, cv_param, inclExpCand)
     %% Define the input directories
-    outputDirMP = ...
-        '/m/cs/scratch/kepaco/bache1/data/metabolite-identification/GNPS/results/mp-iokr/';
+%     outputDirMP = ...
+%         '/m/cs/scratch/kepaco/bache1/data/metabolite-identification/GNPS/results/mp-iokr/';
     %% Set the parameter
     param = struct ();
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...

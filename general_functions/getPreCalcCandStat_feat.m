@@ -59,6 +59,7 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_n
     
     % Create filename based on the settings
     statHash = DataHash (param_struct);
+    fprintf ('Statistic hash: %s\n', statHash);
     statFn = strcat (inOutDir, '/', statHash, '.mat');
     
     % Load respectively pre-calculated the statistics
@@ -75,6 +76,11 @@ function matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, inOutDir, do_n
             
             % Create a new statistic file
             matObj = matfile (statFn, 'Writable', true);
+            
+            % We should always add the struct used for the hash-calculation
+            % to the result itself. This will enable us, to check always,
+            % whether we really loaded the correct statistic. 
+            matObj.param_struct = param_struct;
 
             matObj.cv         = cv;
             matObj.selec      = selec;

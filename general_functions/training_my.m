@@ -1,3 +1,4 @@
+function foldSelec = training_my (cv, i)
 %% TRAINING_MY behaves like the cvpartitions/training function
 %    The purpose of this function is to provide a joint interface for the
 %    cv structures I introduced.
@@ -12,10 +13,6 @@
 %                                           matrix. (:, i) corresponds to
 %                                           the selection of the training
 %                                           examples for outer fold i.
-%                            * test:        (nTrain x nOuterFolds) logical
-%                                           matrix. (:, i) corresponds to
-%                                           the selection of the test
-%                                           examples for outer fold i.
 %
 %    OUTPUTS:
 %       foldSelec   (nTrain_i x 1)-dimensional binary vector. The logical
@@ -23,7 +20,6 @@
 %                   part of the training (true) or not (false).
 %
 %    See also GETCVINDICES, CVPARTITION and TEST_MY.
-function foldSelec = training_my (cv, i)
     if (nargin < 2)
         error ('training_my:InvalidArgument', 'Not enough input arguments.');
     end %if
@@ -39,7 +35,7 @@ function foldSelec = training_my (cv, i)
             
             foldSelec = cv.training (:, i);
         otherwise
-            error ('training:InvalidArgument', ...
+            error ('training_my:InvalidArgument', ...
                 'Class of CV must be CVPARTITION or STRUCT.');
     end % switch
 end % function

@@ -1,7 +1,7 @@
-function [rank_perc, ranks, cand_num] = aggregate_results_maxElement (inputKernel, cv_param, maxNumCand, inclExpCand)
+function [rank_perc, ranks, cand_num] = aggregate_results_maxElement (inputKernel, outputDirMP, cv_param, maxNumCand, inclExpCand)
     %% Define the input directories
-    outputDirMP = ...
-        '/m/cs/scratch/kepaco/bache1/data/metabolite-identification/GNPS/results/mp-iokr/';
+%     outputDirMP = ...
+%         '/m/cs/scratch/kepaco/bache1/data/metabolite-identification/GNPS/results/mp-iokr/';
     %% Set the parameter
     param = struct ();
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...

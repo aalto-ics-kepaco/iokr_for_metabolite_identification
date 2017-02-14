@@ -1,5 +1,7 @@
 function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
 %% LOADINPUTKERNELLIST
+%   Function to load a list of kernels. Either a single input kernel or a 
+
     switch (upper (param.data_param.inputKernel))
         case upper (param.data_param.availInputKernels)
             disp (['Evaluation using a single kernel: ', param.data_param.inputKernel]);

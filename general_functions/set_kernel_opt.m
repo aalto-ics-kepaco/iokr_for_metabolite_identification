@@ -4,7 +4,7 @@ function [ kernel_opt ] = set_kernel_opt( kernel_type, kernel_param )
 % Set the kernel_opt structure containing the kernel type and parameter(s)
 %
 % INPUTS:
-% kernel_type:     kernel type ('gaussian', 'polynomial' or 'linear'
+% kernel_type:     kernel type ('linear','polynomial','gaussian','tanimoto', or 'tanimoto_gaussian')
 % kernel_param:    kernel parameter(s)
 %       linear kernel: no parameter needed
 %       polynomial kernel: vector of two values, the first one corresponds 
@@ -18,7 +18,7 @@ function [ kernel_opt ] = set_kernel_opt( kernel_type, kernel_param )
 
     kernel_opt.type = kernel_type;
     switch kernel_opt.type
-        case 'gaussian'
+        case {'gaussian','tanimoto_gaussian'}
             kernel_opt.gamma = kernel_param;
             
         case 'polynomial'

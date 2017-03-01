@@ -1,4 +1,4 @@
-function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test, val_lambda, param )
+function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test, KY_type, val_lambda, param )
 %======================================================
 % DESCRIPTION:
 % IOKR in the case of a kernel represention in output

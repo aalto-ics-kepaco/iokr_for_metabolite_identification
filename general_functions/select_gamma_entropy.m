@@ -1,4 +1,4 @@
-function [ gamma ] = select_gamma_entropy( X, base_kernel_type )
+function [ gamma ] = select_gamma_entropy( X, KY_opt )
 %======================================================
 % DESCRIPTION:
 % Find the gamma parameter of a Gaussian kernel such that the entropy of
@@ -19,7 +19,7 @@ function [ gamma ] = select_gamma_entropy( X, base_kernel_type )
     n = size(X,2);
     
     % computation of the base kernel (linear or Tanimoto)
-    base_ker_opt = set_kernel_opt(base_kernel_type);
+    base_ker_opt = set_kernel_opt(KY_opt.base_kernel);
     K = build_kernel(X, X, base_ker_opt);
    
     % computation of all pairwise distances

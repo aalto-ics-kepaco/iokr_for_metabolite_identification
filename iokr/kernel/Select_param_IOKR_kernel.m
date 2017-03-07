@@ -1,4 +1,4 @@
-function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_train, Y_train, KY_type, val_lambda, param )
+function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_train, Y_train, KY_opt, val_lambda, param )
 %======================================================
 % DESCRIPTION:
 % Selection of the regularization parameter in IOKR in the case of a kernel represention in output
@@ -25,7 +25,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
 %======================================================    
 
     % Parameter(s) of the output kernel
-    switch KY_type
+    switch KY_opt.type
         case 'gaussian'
             val_KY_param = [0.001 0.005 0.01 0.05 0.1 1];
         case 'polynomial'
@@ -47,7 +47,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
             
             for ip = 1:n_param
                 
-                KY_par = set_kernel_opt( KY_type, val_KY_param(:,ip));
+                KY_par = set_kernel_param( KY_opt, val_KY_param(:,ip));
                 KY_train = build_kernel(Y_train, Y_train, KY_par);
                 
                 for j = 1:n_folds
@@ -86,7 +86,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
 
             lambda_opt = val_lambda(ind_lambda_opt);
             
-            KY_par_opt = set_kernel_opt( KY_type, val_KY_param(:,ind_KY_param_opt));
+            KY_par_opt = set_kernel_param( KY_opt, val_KY_param(:,ind_KY_param_opt));
 
             
         case 'loocv'
@@ -97,7 +97,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
             for ip = 1:n_param
                 
                 % MKL
-                KY_par = set_kernel_opt(KY_type, val_KY_param(:,ip));
+                KY_par = set_kernel_param(KY_opt, val_KY_param(:,ip));
                 KY_train = build_kernel(Y_train, Y_train, KY_par);
                 
                 w{ip} = mkl_weight(param.mkl, KX_list_train, normmat(KY_train));
@@ -126,8 +126,37 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
         
         lambda_opt = val_lambda(ind_lambda_opt);
         KY_param_opt = val_KY_param(:,ind_KY_param_opt);
-        KY_par_opt = set_kernel_opt(KY_type, KY_param_opt);
+        KY_par_opt = set_kernel_param(KY_opt, KY_param_opt);
         w_opt = w{ind_KY_param_opt};
     end
 
+end
+
+function [] = selec_cv_without_kernel_param(KX_list_train, KY_train, c, param, val_lambda)
+
+
+    for j = 1:n_folds
+        train_set_cv = find(training(c,j));
+        test_set_cv = find(test(c,j));
+
+        % MKL
+        [KX_train_cv, KX_train_test_cv, ~] = mkl(KX_list_train, ...
+            normmat(KY_train(train_set_cv,train_set_cv)), train_set_cv, test_set_cv, param);
+
+        % Centering and normalization
+        [KY_train_cv, KY_train_test_cv] = input_kernel_center_norm( KY_train, train_set_cv, test_set_cv, param.center);
+
+        for il = 1:length(val_lambda)
+            lambda = val_lambda(il);
+
+            % Training and prediction
+            C_cv = Train_IOKR_kernel(KX_train_cv, lambda);
+            B_cv = C_cv \ KX_train_test_cv;
+
+
+            % Compute the mean squared error
+            mse(ip,il,j) = 1 + 1/length(test_set_cv)*...
+                   trace(B_cv'*KY_train_cv*B_cv - 2*B_cv'*KY_train_test_cv);
+        end
+    end
 end

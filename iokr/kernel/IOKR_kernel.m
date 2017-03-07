@@ -36,7 +36,9 @@ function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test
 
     % Training IOKR with the selected parameter
     C = Train_IOKR_kernel(KX_train, lambda_opt);
-    B = C \ KX_train_test;
+    
+    % Prediction on the test set
+    B = Prediction_IOKR_kernel(KX_train_test, C);
     
     % Preimage
     score = Preimage_IOKR_kernel(Y_train, KY_par_opt, B, Y_C_test, param);

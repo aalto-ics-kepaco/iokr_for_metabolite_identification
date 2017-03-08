@@ -40,7 +40,7 @@ function [ K ] = build_kernel( X1, X2, kernel_opt )
 
                     Kb_1 = build_tanimoto_kernel(X1, X1);
                     Kb_2 = build_tanimoto_kernel(X2, X2);
-                    Kb_12 = build_tanimoto_kernel(X1, X2);   
+                    Kb_12 = build_tanimoto_kernel(X1, X2);
             end
             
             % Gaussian kernel on top of the base kernel
@@ -81,8 +81,7 @@ end
 % Gaussian kernel
 function [ K_gauss ] = build_gaussian_kernel( Kb_1, Kb_2, Kb_12, gamma)
 
-    n1 = size(X1,2);
-    n2 = size(X2,2);
+    [n1,n2] = size(Kb_12);
     
     % Pairwise distances
     Dis = diag(Kb_1) * ones(1,n2) + ones(n1,1) * diag(Kb_2)' -2 * Kb_12;

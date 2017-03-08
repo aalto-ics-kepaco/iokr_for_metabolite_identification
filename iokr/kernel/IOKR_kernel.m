@@ -9,8 +9,8 @@ function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test
 % test_test:    vector containing the test indices (length n_test)
 % Y_train:      matrix of size d*n_train containing the training output vectors
 % Y_C_test:     test candidate sets
-% val_lambda:   vector of strictly positive values among which the regularization 
-%               parameter of IOKR will be selected
+% KY_opt:       1*1 struct array containing information related to the
+%               output kernel (kernel type, ...)
 % param:        structure containing the MP-IOKR parameters
 %   param.center:       binary value indicating if the input and output
 %                       kernel/feature vectors should be centered (1) or not (0)
@@ -18,6 +18,7 @@ function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test
 %                       ('alignf' or 'unimkl')
 %   param.cv:           string indicating the type of cross-validation
 %                       ('cv' or 'loocv') for parameter selection
+% param_grid:           1*1 struct array indicating the parameter grid to explore
 %
 % OUTPUTS:
 % score:        cell of length n_test, each entry being a vector containing 
@@ -29,7 +30,7 @@ function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test
     KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
     
     % Selection of the regularization parameter and of the output kernel parameter(s)
-    [lambda_opt, KY_par_opt, w_opt] = Select_param_IOKR_kernel2(KX_list_train, Y_train, KY_opt, param, param_grid);
+    [lambda_opt, KY_par_opt, w_opt] = Select_param_IOKR_kernel(KX_list_train, Y_train, KY_opt, param, param_grid);
     
     % Input kernel combination
     [KX_train, KX_train_test] = mkl_combine_train_test(KX_list, train_set, test_set, w_opt, param.center);

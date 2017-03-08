@@ -7,8 +7,8 @@ function [ score ] = Preimage_IOKR_kernel( Y_train, KY_par, B, Y_C_test, param )
 % Y_train:          matrix of size d*n_train containing the training output
 %                   vectors
 % KY_par:           parameters of the output kernel
-% Y_C_test:         test candidate sets
 % B:                matrix equal to (lambda*eye(n_train) + KX_train) \ KX_train_test
+% Y_C_test:         test candidate sets
 % param:            structure containing the MP-IOKR parameters
 %   param.center:       binary value indicating if the input and output
 %                       kernel/feature vectors should be centered (1) or not (0)

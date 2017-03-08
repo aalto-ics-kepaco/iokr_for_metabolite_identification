@@ -1,4 +1,4 @@
-function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test, KY_type, val_lambda, param )
+function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test, KY_opt, param, param_grid )
 %======================================================
 % DESCRIPTION:
 % IOKR in the case of a kernel represention in output
@@ -29,7 +29,7 @@ function [ score ] = IOKR_kernel(KX_list, train_set, test_set, Y_train, Y_C_test
     KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
     
     % Selection of the regularization parameter and of the output kernel parameter(s)
-    [lambda_opt, KY_par_opt, w_opt] = Select_param_IOKR_kernel(KX_list_train, Y_train, KY_type, val_lambda, param);
+    [lambda_opt, KY_par_opt, w_opt] = Select_param_IOKR_kernel2(KX_list_train, Y_train, KY_opt, param, param_grid);
     
     % Input kernel combination
     [KX_train, KX_train_test] = mkl_combine_train_test(KX_list, train_set, test_set, w_opt, param.center);

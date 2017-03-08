@@ -25,10 +25,10 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
 %
 %======================================================    
 
-    if isfield(KY_opt,'param_selection')
-        if strcmp(KY_opt.param_selection,'entropy')
-            param_grid.gamma = select_gamma_entropy(Y_train, KY_opt);
-        end
+    % If the param_selection field is set to 'entropy', we use the gamma parameter 
+    % that maximizes the entropy of the kernel (can only used with Gaussian kernels)
+    if isfield(KY_opt,'param_selection') && strcmp(KY_opt.param_selection,'entropy')
+        param_grid.gamma = select_gamma_entropy(Y_train, KY_opt);
     end
 
     % Generates all possible parameter combinations

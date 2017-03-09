@@ -6,7 +6,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
 % INPUTS:
 % KX_list_train:    cell array containing the training input kernel matrices
 % Y_train:          matrix of size d*n_train containing the training output vectors
-% KY_opt:          1*1 struct array containing information related to the
+% KY_opt:           1*1 struct array containing information related to the
 %                   output kernel (kernel type, ...)
 % param_grid:       1*1 struct array indicating the parameter grid to explore 
 % param:            structure containing the IOKR parameters

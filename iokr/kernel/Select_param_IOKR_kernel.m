@@ -1,4 +1,4 @@
-function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_train, Y_train, KY_opt, param_grid, param )
+function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_train, Y_train, ky_param, select_param, iokr_param )
 %======================================================
 % DESCRIPTION:
 % Selection of the regularization parameter in IOKR in the case of a kernel represention in output
@@ -6,15 +6,15 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
 % INPUTS:
 % KX_list_train:    cell array containing the training input kernel matrices
 % Y_train:          matrix of size d*n_train containing the training output vectors
-% KY_opt:           1*1 struct array containing information related to the
-%                   output kernel (kernel type, ...)
-% param_grid:       1*1 struct array indicating the parameter grid to explore 
-% param:            structure containing the IOKR parameters
+% ky_param:         1*1 struct array containing the information related to the
+%                   output kernel
+% select_param:     1*1 struct array containing information related to the parameter selection 
+% iokr_param:            structure containing the IOKR parameters
 %   param.center:   binary value indicating if the input and output
 %                   kernel/feature vectors should be centered (1) or not (0)
 %   param.mkl:      string indicating the MKL algorithm used for kernel combination 
 %                   ('alignf' or 'unimkl')
-%   param.cv:       string indicating the type of cross-validation
+%   param.cv_type:       string indicating the type of cross-validation
 %                   ('cv' or 'loocv') for parameter selection
 %
 % OUTPUT:
@@ -27,34 +27,39 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
 
     % If the param_selection field is set to 'entropy', we use the gamma parameter 
     % that maximizes the entropy of the kernel (can only used with Gaussian kernels)
-    if isfield(KY_opt,'param_selection') && strcmp(KY_opt.param_selection,'entropy')
-        param_grid.gamma = select_gamma_entropy(Y_train, KY_opt);
+    if isfield(ky_param,'param_selection') && strcmp(ky_param.gamma_selection,'entropy')
+        ky_param.gamma = select_gamma_entropy(Y_train, ky_param);
+    end
+    
+    if strcmp(select_param.cv_type,'cv') && ~isfield(select_param,'cv_partition')
+        % Create cross-validation partition
+        n_folds = select_param.num_folds;
+        select_param.cv_partition = cvpartition(size(Y_train,2), 'k', n_folds);
     end
 
-    % Generates all possible parameter combinations
-    [val_lambda, params] = IterGrid(param_grid, KY_opt);
+    % Possible values for the regularization parameter
+    val_lambda = select_param.lambda;
     
-    % Create cross-validation partition
-    c = cvpartition(size(Y_train,2), 'k', 10);
-
-
-    mse = zeros(length(params), length(val_lambda));
-    w = cell(length(params), 1);
+    % Generates all possible parameter combinations for the output kernel
+    ky_param_all_comb = IterGrid( ky_param );
     
-    for ip = 1:length(params)
+    mse = zeros(length(ky_param_all_comb), length(val_lambda));
+    w = cell(length(ky_param_all_comb), 1);
+    
+    for ip = 1:length(ky_param_all_comb)
 
-        KY_train = build_kernel(Y_train, Y_train, params(ip));
+        KY_train = build_kernel(Y_train, Y_train, ky_param_all_comb(ip));
         
         % Multiple kernel learning and kernel centering/normalization
-        w{ip} = mkl_weight(param.mkl, KX_list_train, normmat(KY_train));
-        KX_train = mkl_combine_train(KX_list_train, w{ip}, param.center);
+        w{ip} = mkl_weight(iokr_param.mkl, KX_list_train, normmat(KY_train));
+        KX_train = mkl_combine_train(KX_list_train, w{ip}, iokr_param.center);
         
         % Centering and normalization
-        KY_train_c = center(KY_train, mean(KY_train,1), param.center);
+        KY_train_c = center(KY_train, mean(KY_train,1), iokr_param.center);
         KY_train_c = normmat(KY_train_c);
 
         % Computation of the mse for different regularization parameters lambda
-        mse(ip,:) = IOKR_eval_mse(KX_train, KY_train_c, val_lambda, param.cv, c);
+        mse(ip,:) = IOKR_eval_mse(KX_train, KY_train_c, val_lambda, select_param);
     end
        
     [A1,I1] = min(mse,[],1);
@@ -64,19 +69,20 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR_kernel( KX_list_t
     ind_KY_param_opt = I1(:,ind_lambda_opt);
     
     lambda_opt = val_lambda(ind_lambda_opt);
-    KY_par_opt = params(ind_KY_param_opt);
+    KY_par_opt = ky_param_all_comb(ind_KY_param_opt);
     w_opt = w{ind_KY_param_opt};
 
 end
 
 
-function [ mse ] = IOKR_eval_mse( KX_train, KY_train, val_lambda, cv_type, c )
+function [ mse ] = IOKR_eval_mse( KX_train, KY_train, val_lambda, select_param )
 
-    switch cv_type
+    switch select_param.cv_type
         
         % Parameter selection with inner cross-validation
         case 'cv'
         
+            c = select_param.cv_partition;
             n_folds = c.NumTestSets;
 
             mse_cv = zeros(1, length(val_lambda), n_folds);

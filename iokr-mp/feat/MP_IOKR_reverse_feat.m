@@ -96,7 +96,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
             clear KX_train_combined KX_train_test_combined
         case 'separate'
             KX_train_list = cell(n_kx,1);
-            for k = 1:n_kx
+            for k = 1:n_k
                 [KX_train_list{k}, ~] = input_kernel_center_norm(KX_list{k}, train_set, test_set, mp_iokr_param.center);
                 KX_train_list{k} = w(k) * KX_train_list{k};
             end

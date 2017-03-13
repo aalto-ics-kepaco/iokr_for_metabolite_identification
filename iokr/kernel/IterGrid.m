@@ -1,78 +1,61 @@
-function [ val_lambda, params ] = IterGrid( param_grid, KY_opt )
+function [ params ] = IterGrid( ky_param )
 %======================================================
 % DESCRIPTION:
-% Generates all the possible parameter combinations for the parameter selection
+% Generates all the possible parameter combinations for the kernel parameters
 %
 % INPUTS:
-% param_grid:   struct array of size 1*1 indicating the parameter grid to explore 
+% ky_param:     struct array of size 1*1 containing the kernel options and the 
+%               parameter values to consider for the parameter selection 
 %
 % OUTPUTS:
 % params:       struct array of size 1*n where n is the number of possible
 %               parameter combinations. Each value corresponds to a parameter combination.
 %
 % EXAMPLE:
-%   >> param_grid = struct('lambda', [1 10], 'gamma', [2 3 4]);
-%   >> t = IterGrid(param_grid)
-%   ans = 
-% 
-%   1x6 struct array with fields:
-% 
-%     lambda
-%     gamma
 %
-%   >> t(1)
-%   ans = 
-% 
-%     lambda: 1
-%      gamma: 2
+%   >> ky_param = struct('type','gaussian','base_kernel','linear', 'gamma', [1 2 4 8]);
+%   >> params = IterGrid( ky_param );
 %
-%   >> t(2)
-% 
-%   ans = 
-% 
-%     lambda: 10
-%      gamma: 2
+% params is a 4*1 struct array with fields: type, base_kernel and gamma.
+%
+% params(1) corresponds to struct('type','gaussian','base_kernel','linear', 'gamma', 1)
+% params(2) corresponds to struct('type','gaussian','base_kernel','linear', 'gamma', 2)
+% params(3) corresponds to struct('type','gaussian','base_kernel','linear', 'gamma', 4)
+% params(4) corresponds to struct('type','gaussian','base_kernel','linear', 'gamma', 8)
 %
 %======================================================
+    
 
-    % remove the regularization parameter
-    val_lambda = param_grid.lambda;
-    param_grid = rmfield(param_grid,'lambda');
-
-    f = fieldnames(param_grid);
-
-    if isempty(f)
-        % in the case of kernel without parameters, params is a 1*1 struct
-        % array containing the kernel type and eventually the base kernel
+    fields = fieldnames(ky_param); % fields of the struct array
+    num_fields = length(fields);
+     
+    % extract the values for each field in a cell array
+    ky_values = cell(num_fields,1);
+    for i = 1:num_fields
         
-        params = KY_opt;
+        field_value = ky_param.(fields{i});
         
-    else
-        
-        f_ky = fieldnames(KY_opt);
-        f2 = {f_ky{:},f{:}}';
-        % otherwise we enumerate all the possible combinations for the
-        % kernel parameter(s)
-        
-        % Extracts the values for the different fields in a cell array
-        c = cellfun(@(x) getfield(param_grid,x), f,'UniformOutput', false);
-        c_ky = cellfun(@(x) getfield(KY_opt,x), f_ky,'UniformOutput', false);
-
-        % Generates the parameter grid
-        b = cell(numel(c),1);
-        [b{:}] = ndgrid(c{:});
-        n_param = length(b{1}(:));
-
-        % Builds a struct array containing all the possible parameter combinations
-        
-        params = cell2struct(cell(length(f2),1), f2, 1);
-        
-        for k = 1:n_param
-            v = cellfun(@(x) x(k), b,'UniformOutput', false);
-            v2 = {c_ky{:},v{:}}';
-            params(k) = cell2struct(v2, f2, 1);
-            
+        if ischar(field_value)
+            ky_values{i} = {field_value};
+        else
+            ky_values{i} = num2cell(field_value);
         end
+        
     end
+
+    % compute all the possible pairs of parameters
+    ix = cellfun(@(x) 1:numel(x), ky_values, 'UniformOutput', false);
+
+    [ix{:}] = ndgrid(ix{:});
+
+    A = cell(numel(ix{1}), num_fields);
+    for i = 1:num_fields
+
+        A(:,i) = reshape(ky_values{i}(ix{i}),[],1);
+
+    end
+
+    % convert the cell array to a struct array
+    params = cell2struct(A, fields, 2);
     
 end

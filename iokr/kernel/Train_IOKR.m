@@ -1,14 +1,19 @@
 function [ train_model ] = Train_IOKR( KX_list_train, Y_train, output_param, select_param, iokr_param )
 %======================================================
 % DESCRIPTION:
-% Training of IOKR in the case of a kernel represention in output
+% Training step of IOKR
 %
 % INPUTS:
-% KX_train:     input kernel matrix on the training set (size n_train*n_train)
-% lambda:       regularization parameter (>0)
+% KX_list_train:    cell array containing the training input kernel matrices
+% Y_train:          matrix of size d*n_train containing the training output vectors
+% output_param:     1*1 struct array containing the information related to the outputs
+% select_param:     1*1 struct array containing information related to the parameter selection
+% iokr_param:       1*1 struct array containing information relative to
+%                   centering and multiple kernel learning
 %
 % OUTPUTS:
-% C:            (partial) regression model
+% train_model:      1*1 struct array containing the regression model
+%                   and information on the training data 
 %
 %======================================================
     

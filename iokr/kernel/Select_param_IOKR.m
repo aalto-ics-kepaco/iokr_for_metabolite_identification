@@ -6,22 +6,15 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
 % INPUTS:
 % KX_list_train:    cell array containing the training input kernel matrices
 % Y_train:          matrix of size d*n_train containing the training output vectors
-% ky_param:         1*1 struct array containing the information related to the
-%                   output kernel
+% output_param:     1*1 struct array containing the information related to the outputs
 % select_param:     1*1 struct array containing information related to the parameter selection 
-% iokr_param:            structure containing the IOKR parameters
-%   param.center:   binary value indicating if the input and output
-%                   kernel/feature vectors should be centered (1) or not (0)
-%   param.mkl:      string indicating the MKL algorithm used for kernel combination 
-%                   ('alignf' or 'unimkl')
-%   param.cv_type:       string indicating the type of cross-validation
-%                   ('cv' or 'loocv') for parameter selection
+% iokr_param:       1*1 struct array containing information relative to
+%                   centering and multiple kernel learning
 %
 % OUTPUT:
 % lambda_opt:   selected regularization parameter
 % KY_par_opt:   struct array containing the selected parameter(s) for the output kernel
-% w_opt:        MKL weights when using the output kernel with selected
-%               parameter(s)
+% w_opt:        MKL weights when using the output kernel with selected parameter(s)
 %
 %======================================================    
 

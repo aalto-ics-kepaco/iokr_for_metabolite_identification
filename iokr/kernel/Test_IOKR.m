@@ -1,37 +1,59 @@
-function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y_train, Y_C_test, iokr_param )
-%UNTITLED8 Summary of this function goes here
-%   Detailed explanation goes here
+function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y_train, Y_C_test, ker_center )
+%======================================================
+% DESCRIPTION:
+% Prediction step of IOKR
+%
+% INPUTS:
+% KX_list_train_test:   cell array containing the input kernel matrices
+%                       between the training and the test examples
+% KX_list_test:         cell array containing the test input kernel matrices
+% train_model:          1*1 struct array containing the regression model
+%                       and information on the training data
+% Y_train:              matrix of size d*n_train containing the training output vectors
+% Y_C_test:             cell array containing the candidate output vectors
+%                       (each element of the cell array corresponds to a candidate set)
+% ker_center:           binary value indicating if the input/output kernels should be
+%                       centered or not
+%
+% OUTPUTS:
+% score:                cell array containing the scores obtained for each
+%                       candidate set
+%
+%======================================================
 
-    n_test = length(Y_C_test); % number of test examples
-
-    % Computation of the input kernel between training and test examples
-    KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, KX_list_test, train_model.process_input, iokr_param.center);
+    %% Computation of the input kernel between training and test examples
+    KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, KX_list_test, train_model.process_input, ker_center);
     
-    % Prediction on the test set
+    
+    %% Prediction on the test set
     B  = model.C \ KX_train_test;
     
-    % Output processing
+    
+    %% Pre-image
+    
+    % Preprocessing of the training outputs
     switch train_model.representation
         case 'feature'
-            [Psi_train, process_output] = output_feature_preprocessing_train(Y_train, iokr_param.center);
+            [Psi_train, process_output] = output_feature_preprocessing_train(Y_train, ker_center);
         case 'kernel'
-            [~, process_output] = output_kernel_preprocessing_train(Y_train, train_model.KY_par, iokr_param.center);
+            [~, process_output] = output_kernel_preprocessing_train(Y_train, train_model.KY_par, ker_center);
     end
 
-    % Pre-image
+    % scoring
+    n_test = length(Y_C_test); % number of test examples
     score = cell(n_test,1);
     for j = 1:n_test
         
         switch train_model.representation
             case 'feature'
-                
-                Psi_Cj = output_feature_preprocessing_test(Y_C_test{j}, process_output, iokr_param.center);
+                                
+                Psi_Cj = norma(Y_C_test{j}, process_output.mean, ker_center);
                 
                 score{j} = (Psi_train * B(:,j))' * Psi_Cj;
                 
             case 'kernel'
                 
-                KY_train_Cj = output_kernel_preprocessing_test(Y_train, Y_C_test{j}, train_model.KY_par, process_output, iokr_param.center);
+                KY_train_Cj = output_kernel_preprocessing_test(Y_train, Y_C_test{j}, train_model.KY_par, process_output, ker_center);
 
                 score{j} = B(:,j)' * KY_train_Cj;
         end
@@ -40,8 +62,8 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y
 end
 
 
-% Additional functions for preprocessing the input kernels and the output
-% features/kernel in the test step
+% Additional functions for preprocessing the input/output kernels between
+% the training and test steps
 
 function [ KY_train_cand_cn ] = output_kernel_preprocessing_test( Y_train, Y_cand, KY_par, train_process, ker_center )
 
@@ -49,11 +71,6 @@ function [ KY_train_cand_cn ] = output_kernel_preprocessing_test( Y_train, Y_can
     KY_cand = build_kernel(Y_cand, Y_cand, KY_par);
     
     KY_train_cand_cn = kernel_preprocessing_test(KY_train_cand, KY_cand, train_process, ker_center);
-end
-
-function [ Psi_cand ] = output_feature_preprocessing_test( Y_cand, train_process, ker_center )
-
-    Psi_cand = norma(Y_cand, train_process.mean, ker_center);
 end
 
 function [ KX_train_test ] = input_kernel_preprocessing_test( KX_list_train_test, KX_list_test, train_process, ker_center )

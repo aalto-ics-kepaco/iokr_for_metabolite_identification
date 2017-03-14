@@ -1,4 +1,4 @@
-function [ KY_train_cn, process_output ] = output_kernel_preprocessing_train( Y_train, KY_param, iokr_param)
+function [ KY_train_cn, process_output ] = output_kernel_preprocessing_train( Y_train, KY_par, ker_center )
 %======================================================
 % DESCRIPTION:
 % Preprocessing of the training output kernel
@@ -16,9 +16,7 @@ function [ KY_train_cn, process_output ] = output_kernel_preprocessing_train( Y_
 %
 %======================================================
 
-    ker_center = iokr_param.center;
-
-    KY_train = build_kernel(Y_train, Y_train, KY_param);
+    KY_train = build_kernel(Y_train, Y_train, KY_par);
 
     % Centering and normalization of the output kernel
     KY_train_c = center(KY_train, mean(KY_train,1), ker_center); % centering
@@ -27,5 +25,4 @@ function [ KY_train_cn, process_output ] = output_kernel_preprocessing_train( Y_
     process_output.mean = mean(KY_train,1);
     process_output.diag_c = diag(KY_train_c);
     
-
 end

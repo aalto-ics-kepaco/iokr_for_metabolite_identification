@@ -1,8 +1,7 @@
-function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list_train, w, iokr_param)
+function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list_train, w, ker_center)
 %======================================================
 % DESCRIPTION:
-% Preprocessing of the training input and output kernel
-% matrices
+% Preprocessing of the training input kernel matrices
 %
 % INPUTS:
 % KX_list_train:    cell array of size: n_kx*1 containing the input kernel 
@@ -14,17 +13,19 @@ function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list
 % OUTPUTS:
 % KX_train:         linear combination of the preprocessed input kernel matrices 
 %                   on the training set
-% ker_process:      structured containing the information needed for processing the 
+% ker_process:      structure containing the information needed for processing the 
 %                   test samples identically to the training samples
 %
 %======================================================
-
-    ker_center = iokr_param.center;
-
- % Centering and normalization of the input kernels and kernel combination
+    
     n_kx = length(KX_list_train); % number of input kernels
-    KX_train = zeros(size(KX_list_train{1}));
-    process_input = struct('mean',{},'diag_c',{});
+    
+    n_train = size(KX_list_train{1}); % number of training examples
+
+    % Centering and normalization of the input kernels and kernel combination
+    
+    KX_train = zeros(n_train);
+    process_input = struct('w',{},'mean',{},'diag_c',{});
     for i = 1:n_kx
         
         KX_i = KX_list_train{i};
@@ -33,8 +34,10 @@ function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list
         
         KX_train = KX_train + w(i) * KX_i_cn;
         
+        process_input(i).w = w(i);
         process_input(i).mean = mean(KX_i,1);
         process_input(i).diag_c = diag(KX_i_c);
+        
     end
     
 end

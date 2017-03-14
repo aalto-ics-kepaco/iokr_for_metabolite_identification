@@ -47,7 +47,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
             KX_train = input_kernel_preprocessing_train(KX_list_train, w, iokr_param);
             
             % Output feature vectors processing
-            Psi_train = norma(Y_train, mean(Y_train,2), iokr_param.center);
+            Psi_train = output_feature_preprocessing_train(Y_train, iokr_param.center);
             
             % Computation of the MSE for the different regularization parameters
             mse = IOKR_feature_eval_mse(KX_train, Psi_train, select_param);

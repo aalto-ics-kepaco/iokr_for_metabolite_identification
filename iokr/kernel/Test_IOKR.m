@@ -9,14 +9,32 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y
     
     % Prediction on the test set
     B  = model.C \ KX_train_test;
+    
+    % Output processing
+    switch train_model.representation
+        case 'feature'
+            [Psi_train, process_output] = output_feature_preprocessing_train(Y_train, iokr_param.center);
+        case 'kernel'
+            [~, process_output] = output_kernel_preprocessing_train(Y_train, train_model.KY_par, iokr_param.center);
+    end
 
     % Pre-image
     score = cell(n_test,1);
     for j = 1:n_test
         
-        KY_train_Cj = output_kernel_preprocessing_test(Y_train, Y_C_test{j}, KY_par, train_model.process_output, iokr_param.center);
+        switch train_model.representation
+            case 'feature'
+                
+                Psi_Cj = output_feature_preprocessing_test(Y_C_test{j}, process_output, iokr_param.center);
+                
+                score{j} = (Psi_train * B(:,j))' * Psi_Cj;
+                
+            case 'kernel'
+                
+                KY_train_Cj = output_kernel_preprocessing_test(Y_train, Y_C_test{j}, train_model.KY_par, process_output, iokr_param.center);
 
-        score{j} = B(:,j)' * KY_train_Cj;
+                score{j} = B(:,j)' * KY_train_Cj;
+        end
     end
 
 end

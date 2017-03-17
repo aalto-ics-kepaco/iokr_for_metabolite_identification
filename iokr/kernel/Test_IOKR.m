@@ -26,7 +26,7 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y
     
     
     %% Prediction on the test set
-    B  = model.C \ KX_train_test;
+    B  = train_model.C \ KX_train_test;
     
     
     %% Pre-image

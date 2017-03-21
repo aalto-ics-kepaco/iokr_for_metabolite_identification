@@ -1,5 +1,5 @@
-function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
-    opt_param, mp_iokr_param, data_param, debug_param)
+function [ score, debug_info ] = MP_IOKR_reverse_feat( KX_list, Y_train, Y_C, ...
+    opt_param, mp_iokr_param, data_param )
 %======================================================
 % DESCRIPTION:
 % MP-IOKR with reverse IOKR in the case of a feature represention in output
@@ -53,38 +53,15 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
 %               candidate set
 %
 %======================================================
-    if (debug_param.verbose)
-        sw_mkl_weights                     = StopWatch ('mkl-weights');
-        sw_input_kernel_processing         = StopWatch ('input-kernel-processing');
-        sw_Train_reverse_IOKR_feat         = StopWatch ('Train_reverse_IOKR_feat');
-        sw_compute_cov_mean_feat           = StopWatch ('Compute_cov_mean_feat');
-        sw_train_MP_IOKR_reverse_feat      = StopWatch ('Train_MP_IOKR_reverse_feat');
-        sw_prediction_MP_IOKR_reverse_feat = StopWatch ('Prediction_MP_IOKR_reverse_feat');
-        sw_preimage_MP_IOKR_feat           = StopWatch ('Preimage_MP_IOKR_feat');
-        sw_select_param_reverse_IOKR  = StopWatch ('Select_param_reverse_IOKR (gamma)');
-    end % if
 
-    train_set = find (data_param.train_set);
-    test_set  = find (data_param.test_set);
-
-    
-    
-    %% Learning kernel weights with Multiple Kernel Learning  
-    if (debug_param.verbose) ; sw_mkl_weights.start() ; end % if
-    
+    % Learning kernel weights with Multiple Kernel Learning  
     KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
     
     w = mkl_weight(mp_iokr_param.mkl, KX_list_train, normmat(Y_train'*Y_train));
-    
-    if (debug_param.verbose)
-        sw_mkl_weights.stop();
-        sw_mkl_weights.showAvgTime();
-    end % if
-        
+  
     clear KX_list_train
     
-    %% Centering, normalization and MKL of the input-kernels
-    if (debug_param.verbose) ; sw_input_kernel_processing.start() ; end % if
+    % Centering, normalization and MKL of the input-kernels
     
     n_kx = length(KX_list);
     switch mp_iokr_param.rev_iokr
@@ -100,17 +77,9 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
                 [KX_train_list{k}, ~] = input_kernel_center_norm(KX_list{k}, train_set, test_set, mp_iokr_param.center);
                 KX_train_list{k} = w(k) * KX_train_list{k};
             end
-        otherwise
-            error ('MP_IOKR_reverse_feat:InvalidInput', ...
-                '%s is not a valid value for MP_IOKR_PARAM.REV_IOKR', mp_iokr_param.rev_iokr);
     end
-    
-    if (debug_param.verbose)
-        sw_input_kernel_processing.stop();
-        sw_input_kernel_processing.showAvgTime();
-    end % if
 
-    %% Training output feature vectors
+    % Training output feature vectors
     mean_Y_train = mean(Y_train,2);
     Psi_train = norma(Y_train, mean_Y_train, mp_iokr_param.center);
     
@@ -120,15 +89,9 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         Y_C_train = Y_C.getSubset (train_set);
     end % if
     
-    %% Selection of the regularization parameter(s) of reverse IOKR
-    if (debug_param.verbose) ; sw_select_param_reverse_IOKR.start() ; end % if
+    % Selection of the regularization parameter(s) of reverse IOKR
     
     gamma_opt = Select_param_reverse_IOKR(KX_train_list, Psi_train, opt_param.val_gamma);
-    
-    if (debug_param.verbose) 
-        sw_select_param_reverse_IOKR.stop();
-        sw_select_param_reverse_IOKR.showAvgTime();
-    end % if
     
     % Modify the KX_list in order to combine the kernel belonging to unique
     % gamma values.
@@ -149,36 +112,20 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         fprintf ('Length of new kernel-list: %d\n', n_kx);
     end % if
     
-    %% Parameter selection    
+    % Parameter selection    
     fprintf ('Parameter selection\n');
     debug_info = struct ();
     
     [lambda_opt, debug_info.mp_err] = Select_param_MP_IOKR_reverse_feat ( ...
         KX_train_list, Y_train, Y_C_train, unique (gamma_opt), ...
-        opt_param, mp_iokr_param, data_param, debug_param);
+        opt_param, mp_iokr_param, data_param);
     
-    debug_info.gamma_opt = gamma_opt;
-    debug_info.lambda_opt = lambda_opt;
+    fprintf ('Selected parameter: lambda = %e\ngamma =%e \n\n', lambda_opt, gamma_opt);
     
-    fprintf ('Selected parameter: lambda = %e\ngamma =\n', debug_info.lambda_opt);
-    fprintf ('%e\n', debug_info.gamma_opt);
-      
-    if (debug_param.verbose)
-        fprintf ('MP-ERR: mean over folds (1 x n_folds) & (n_val_lambda x n_folds):\n');
-        disp ([mean(debug_info.mp_err, 2), debug_info.mp_err]);
-    end % if
-    
-    %% Training the reverse IOKR model
-    if (debug_param.verbose) ; sw_Train_reverse_IOKR_feat.start() ; end % if
-    
+    % Training the reverse IOKR model    
     M = Train_reverse_IOKR_feat(Psi_train, unique (gamma_opt));
     
-    if (debug_param.verbose) 
-        sw_Train_reverse_IOKR_feat.stop();
-        sw_Train_reverse_IOKR_feat.showAvgTime();
-    end % if
-    
-    %% Training the MP-IOKR model
+    % Training the MP-IOKR model
     if (data_param.usePreCalcStat) 
         % Train
         Mean_Psi_C_train = data_param.stats.Mean_Psi_C_train;
@@ -186,41 +133,21 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         
         clear stats;
     else
-        if (debug_param.verbose) ; sw_compute_cov_mean_feat.start() ; end % if
             
-        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, mean_Y_train, mp_iokr_param.center, debug_param.verbose);
+        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, mean_Y_train, mp_iokr_param.center);
         
-        if (debug_param.verbose)
-            sw_compute_cov_mean_feat.stop();
-            sw_compute_cov_mean_feat.showAvgTime();
-        end % if
     end % if
-    if (debug_param.verbose) ; sw_train_MP_IOKR_reverse_feat.start() ; end % if
     
     C = Train_MP_IOKR_reverse_feat(KX_train_list, Psi_train, M, Mean_Psi_C_train, Cov_Psi_C_train, lambda_opt);
     
-    if (debug_param.verbose)
-        sw_train_MP_IOKR_reverse_feat.stop();
-        sw_train_MP_IOKR_reverse_feat.showAvgTime();
-    end % if
-    %% Prediction on the test set  
-    if (debug_param.verbose) ; sw_prediction_MP_IOKR_reverse_feat.start() ; end % if
+    % Prediction on the test set  
     
     Psi_pred = Prediction_MP_IOKR_reverse_feat(KX_train_test_list, C);
-    
-    if (debug_param.verbose)
-        sw_prediction_MP_IOKR_reverse_feat.stop();
-        sw_prediction_MP_IOKR_reverse_feat.showAvgTime();
-    end % if    
-    %% Preimage
+       
+    % Preimage
     Y_C_test = Y_C.getSubset (test_set);
-    
-    if (debug_param.verbose) ; sw_preimage_MP_IOKR_feat.start() ; end % if
-    
+  
     score = Preimage_MP_IOKR_feat(Psi_pred, Y_C_test, mean_Y_train, mp_iokr_param.center);
     
-    if (debug_param.verbose)
-        sw_preimage_MP_IOKR_feat.stop();
-        sw_preimage_MP_IOKR_feat.showAvgTime();
-    end % if    
+   
 end

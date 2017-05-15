@@ -1,10 +1,10 @@
-function [ ] = run_IOKR_GNPS( data_dir, result_dir )
+function [ ] = run_IOKR_GNPS( inputDir, outputDir )
 %======================================================
 % DESCRIPTION:
 % Script for running IOKR on the GNPS dataset
 %
 % INPUTS:
-% data_dir:     directory in which the data are contained
+% inputDir:     directory in which the data are contained
 % result_dir:   directory in which the results will be saved
 %
 %======================================================
@@ -15,20 +15,20 @@ function [ ] = run_IOKR_GNPS( data_dir, result_dir )
     % Load Data
     %--------------------------------------------------------------
 
-    inchi = readtext([data_dir 'inchi.txt']); % Inchi
-    mf_corres = load([data_dir 'matching_mf_train.txt']);  % correspondance with the set of unique mf
-    load([data_dir 'fp.mat'], 'Y'); % fingerprints
+    inchi = readtext([inputDir 'inchi.txt']); % Inchi
+    mf_corres = load([inputDir 'matching_mf_train.txt']);  % correspondance with the set of unique mf
+    load([inputDir 'fp.mat'], 'Y'); % fingerprints
     Y = full(Y);
     [~,n] = size(Y);
 
     % Candidates description
-    load([data_dir 'GNPS_cand.mat'],'cand');
+    load([inputDir 'GNPS_cand.mat'],'cand');
 
     % Input kernels
-    load([data_dir 'input_kernels/kernels_computed_by_myself/KX_list.mat'],'KX_list');
+    load([inputDir 'input_kernels/kernels_computed_by_myself/KX_list.mat'],'KX_list');
 
     % Indices of test examples used in the evaluation
-    eval = load([data_dir 'ind_eval.txt']); 
+    eval = load([inputDir 'ind_eval.txt']); 
 
     % Parameters
     iokr_param = struct('center',1,'mkl','unimkl');
@@ -44,7 +44,7 @@ function [ ] = run_IOKR_GNPS( data_dir, result_dir )
     cand_num = zeros(n,1); % vector containing the number of candidates for each test example
 
     n_folds = 10; % number of folds
-    ind_fold = load([data_dir 'cv_ind.txt']); % indices of the different folds
+    ind_fold = load([inputDir 'cv_ind.txt']); % indices of the different folds
 
     for i = 1:n_folds
         disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
@@ -84,7 +84,7 @@ function [ ] = run_IOKR_GNPS( data_dir, result_dir )
     rank_perc = rank_perc/length(eval)*100;
     rank_perc_100 = rank_perc(1:100);
 
-    filename = [result_dir 'rank_mkl=' iokr_param.mkl '_kernel=' ky_param.type '_base=' ky_param.base_kernel '_' ky_param.param_selection];
+    filename = [outputDir 'rank_mkl=' iokr_param.mkl '_kernel=' ky_param.type '_base=' ky_param.base_kernel '_' ky_param.param_selection];
     save(filename,'rank_perc_100','-ascii');
     
 end

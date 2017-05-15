@@ -1,84 +1,92 @@
+function [ ] = run_IOKR_GNPS( data_dir, result_dir )
+%======================================================
+% DESCRIPTION:
 % Script for running IOKR on the GNPS dataset
+%
+% INPUTS:
+% data_dir:     directory in which the data are contained
+% result_dir:   directory in which the results will be saved
+%
+%======================================================
 
-addpath(genpath('../code'));
+    addpath(genpath('..'));
 
-data_dir = '../../Metabolites_identification/GNPS/data/';
+    %--------------------------------------------------------------
+    % Load Data
+    %--------------------------------------------------------------
 
-%--------------------------------------------------------------
-% Load Data
-%--------------------------------------------------------------
+    inchi = readtext([data_dir 'inchi.txt']); % Inchi
+    mf_corres = load([data_dir 'matching_mf_train.txt']);  % correspondance with the set of unique mf
+    load([data_dir 'fp.mat'], 'Y'); % fingerprints
+    Y = full(Y);
+    [~,n] = size(Y);
 
-inchi = readtext([data_dir 'inchi.txt']); % Inchi
-mf_corres = load([data_dir 'matching_mf_train.txt']);  % correspondance with the set of unique mf
-load([data_dir 'fp.mat'], 'Y'); % fingerprints
-Y = full(Y);
-[~,n] = size(Y);
+    % Candidates description
+    load([data_dir 'GNPS_cand.mat'],'cand');
 
-% Candidates description
-load([data_dir 'GNPS_cand.mat'],'cand');
+    % Input kernels
+    load([data_dir 'input_kernels/kernels_computed_by_myself/KX_list.mat'],'KX_list');
 
-% Input kernels
-load([data_dir 'input_kernels/kernels_computed_by_myself/KX_list.mat'],'KX_list');
+    % Indices of test examples used in the evaluation
+    eval = load([data_dir 'ind_eval.txt']); 
 
-% Indices of test examples used in the evaluation
-eval = load([data_dir 'ind_eval.txt']); 
+    % Parameters
+    iokr_param = struct('center',1,'mkl','unimkl');
+    select_param = struct('cv_type','loocv','lambda',[1e-5 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1 10 100]);
+    ky_param = struct('type','gaussian','base_kernel','tanimoto','param_selection','entropy');
+    output_param = struct('representation','kernel','kernel_param',ky_param);
 
-% Parameters
-iokr_param = struct('center',1,'mkl','unimkl');
-select_param = struct('cv_type','loocv','lambda',[1e-5 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1 10 100]);
-ky_param = struct('type','gaussian','base_kernel','tanimoto','param_selection','entropy');
-output_param = struct('representation','kernel','kernel_param',ky_param);
+    %--------------------------------------------------------------
+    % Cross-validation
+    %--------------------------------------------------------------
 
-%--------------------------------------------------------------
-% Cross-validation
-%--------------------------------------------------------------
+    rank = zeros(n,1);
+    cand_num = zeros(n,1); % vector containing the number of candidates for each test example
 
-rank = zeros(n,1);
-cand_num = zeros(n,1); % vector containing the number of candidates for each test example
+    n_folds = 10; % number of folds
+    ind_fold = load([data_dir 'cv_ind.txt']); % indices of the different folds
 
-n_folds = 10; % number of folds
-ind_fold = load([data_dir 'cv_ind.txt']); % indices of the different folds
+    for i = 1:n_folds
+        disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
 
-for i = 1:n_folds
-    disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
-    
-    % Create training and test sets
-    test_set = find(ind_fold == i);
-    train_set = setdiff(1:n,test_set);
-    test_set = intersect(test_set,eval);
+        % Create training and test sets
+        test_set = find(ind_fold == i);
+        train_set = setdiff(1:n,test_set);
+        test_set = intersect(test_set,eval);
 
-    % Training
-    KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
-    Y_train = Y(:,train_set);
-    
-    train_model = Train_IOKR(KX_list_train, Y_train, output_param, select_param, iokr_param);
-    
-    % Prediction 
-    KX_list_train_test = cellfun(@(x) x(train_set,test_set), KX_list, 'UniformOutput', false);
-    KX_list_test = cellfun(@(x) x(test_set,test_set), KX_list, 'UniformOutput', false);
-    Y_C_test = cellfun(@(x) full(x.fp)', cand(mf_corres(test_set)),'UniformOutput',false);
-    
-    score = Test_IOKR(KX_list_train_test, KX_list_test, train_model, Y_train, Y_C_test, iokr_param.center);
-    
-    % Computation of the ranks
-    for j = 1:length(test_set)
-        k = test_set(j);
-        
-        inchi_c = cand{mf_corres(k)}.inchi;
-        [~,IX] = sort(score{j},'descend');
-        rank(k) = find(strcmp(inchi_c(IX), inchi{k}));
-        cand_num(k) = length(score{j});
+        % Training
+        KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
+        Y_train = Y(:,train_set);
+
+        train_model = Train_IOKR(KX_list_train, Y_train, output_param, select_param, iokr_param);
+
+        % Prediction 
+        KX_list_train_test = cellfun(@(x) x(train_set,test_set), KX_list, 'UniformOutput', false);
+        KX_list_test = cellfun(@(x) x(test_set,test_set), KX_list, 'UniformOutput', false);
+        Y_C_test = cellfun(@(x) full(x.fp)', cand(mf_corres(test_set)),'UniformOutput',false);
+
+        score = Test_IOKR(KX_list_train_test, KX_list_test, train_model, Y_train, Y_C_test, iokr_param.center);
+
+        % Computation of the ranks
+        for j = 1:length(test_set)
+            k = test_set(j);
+
+            inchi_c = cand{mf_corres(k)}.inchi;
+            [~,IX] = sort(score{j},'descend');
+            rank(k) = find(strcmp(inchi_c(IX), inchi{k}));
+            cand_num(k) = length(score{j});
+        end
     end
+
+    % Computation of the percentage of identified metabolites in the top k
+    nel = hist(rank(eval), 1:max(cand_num));
+    rank_perc = cumsum(nel)';
+    rank_perc = rank_perc/length(eval)*100;
+    rank_perc_100 = rank_perc(1:100);
+
+    filename = [result_dir 'rank_mkl=' iokr_param.mkl '_kernel=' ky_param.type '_base=' ky_param.base_kernel '_' ky_param.param_selection];
+    save(filename,'rank_perc_100','-ascii');
+    
 end
-
-% Computation of the percentage of identified metabolites in the top k
-nel = hist(rank(eval), 1:max(cand_num));
-rank_perc = cumsum(nel)';
-rank_perc = rank_perc/length(eval)*100;
-rank_perc_100 = rank_perc(1:100);
-
-filename = ['results/rank_mkl=' iokr_param.mkl '_kernel=' ky_param.type '_base=' ky_param.base_kernel '_' ky_param.param_selection];
-
-save(filename,'rank_perc_100','-ascii');
 
 

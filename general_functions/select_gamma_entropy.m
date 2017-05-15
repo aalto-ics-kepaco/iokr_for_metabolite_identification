@@ -20,6 +20,7 @@ function [ gamma ] = select_gamma_entropy( X, KY_opt )
     
     % computation of the base kernel (linear or Tanimoto)
     base_ker_opt = set_kernel_opt(KY_opt.base_kernel);
+    
     K = build_kernel(X, X, base_ker_opt);
    
     % computation of all pairwise distances

@@ -1,26 +1,27 @@
 % Script for running IOKR on the GNPS dataset
 
-addpath('general_functions');
-addpath('preprocessing')
+addpath(genpath('../code'));
+
+data_dir = '../../Metabolites_identification/GNPS/data/';
 
 %--------------------------------------------------------------
 % Load Data
 %--------------------------------------------------------------
 
-inchi = readtext('../data/inchi.txt'); % Inchi
-mf_corres = load('../data/matching_mf_train.txt');  % correspondance with the set of unique mf
-load ../data/fp.mat Y; % fingerprints
+inchi = readtext([data_dir 'inchi.txt']); % Inchi
+mf_corres = load([data_dir 'matching_mf_train.txt']);  % correspondance with the set of unique mf
+load([data_dir 'fp.mat'], 'Y'); % fingerprints
 Y = full(Y);
 [~,n] = size(Y);
 
 % Candidates description
-load ../data/GNPS_cand.mat cand;
+load([data_dir 'GNPS_cand.mat'],'cand');
 
 % Input kernels
-load ../data/input_kernels/kernels_computed_by_myself/KX_list.mat KX_list;
+load([data_dir 'input_kernels/kernels_computed_by_myself/KX_list.mat'],'KX_list');
 
 % Indices of test examples used in the evaluation
-eval = load('../data/ind_eval.txt'); 
+eval = load([data_dir 'ind_eval.txt']); 
 
 % Parameters
 iokr_param = struct('center',1,'mkl','unimkl');
@@ -36,7 +37,7 @@ rank = zeros(n,1);
 cand_num = zeros(n,1); % vector containing the number of candidates for each test example
 
 n_folds = 10; % number of folds
-ind_fold = load('../data/cv_ind.txt'); % indices of the different folds
+ind_fold = load([data_dir 'cv_ind.txt']); % indices of the different folds
 
 for i = 1:n_folds
     disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
@@ -67,7 +68,7 @@ for i = 1:n_folds
         [~,IX] = sort(score{j},'descend');
         rank(k) = find(strcmp(inchi_c(IX), inchi{k}));
         cand_num(k) = length(score{j});
-    end     
+    end
 end
 
 % Computation of the percentage of identified metabolites in the top k
@@ -76,7 +77,7 @@ rank_perc = cumsum(nel)';
 rank_perc = rank_perc/length(eval)*100;
 rank_perc_100 = rank_perc(1:100);
 
-filename = ['rank_mkl=' iokr_param.mkl '_kernel=' ky_param.type '_base=' ky_param.base_kernel '_' ky_param.param_selection];
+filename = ['results/rank_mkl=' iokr_param.mkl '_kernel=' ky_param.type '_base=' ky_param.base_kernel '_' ky_param.param_selection];
 
 save(filename,'rank_perc_100','-ascii');
 

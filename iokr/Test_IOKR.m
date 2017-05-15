@@ -21,15 +21,15 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y
 %
 %======================================================
 
-    %% Computation of the input kernel between training and test examples
+    % Computation of the input kernel between training and test examples
     KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, KX_list_test, train_model.process_input, ker_center);
     
     
-    %% Prediction on the test set
+    % Prediction on the test set
     B  = train_model.C \ KX_train_test;
     
     
-    %% Pre-image
+    % Pre-image
     
     % Preprocessing of the training outputs
     switch train_model.representation
@@ -39,7 +39,7 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y
             [~, process_output] = output_kernel_preprocessing_train(Y_train, train_model.KY_par, ker_center);
     end
 
-    % scoring
+    % Scoring
     n_test = length(Y_C_test); % number of test examples
     score = cell(n_test,1);
     for j = 1:n_test

@@ -1,17 +1,17 @@
 function [ KY_train_cn, process_output ] = output_kernel_preprocessing_train( Y_train, KY_par, ker_center )
 %======================================================
 % DESCRIPTION:
-% Preprocessing of the training output kernel
-% matrices
+% Preprocessing of the training output kernel matrix
 %
 % INPUTS:
-% KY_train:         output kernel matrix on the training set
+% Y_train:          matrix containing the training output vectors
+% KY_par:           structure containing the output kernel parameters
 % ker_center:       binary value indicating if the kernel matrix should
 %                   be centered or not
 %
 % OUTPUTS:
-% KY_train_c:       preprocessed output kernel matrix on the training set
-% ker_process:      structured containing the information needed for processing the 
+% KY_train_cn:      preprocessed output kernel matrix on the training set
+% process_output:   structure containing the information needed for processing the 
 %                   test samples identically to the training samples
 %
 %======================================================

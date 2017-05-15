@@ -1,4 +1,4 @@
-function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list_train, w, ker_center)
+function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list_train, w, ker_center )
 %======================================================
 % DESCRIPTION:
 % Preprocessing of the training input kernel matrices
@@ -13,7 +13,7 @@ function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list
 % OUTPUTS:
 % KX_train:         linear combination of the preprocessed input kernel matrices 
 %                   on the training set
-% ker_process:      structure containing the information needed for processing the 
+% process_input:    structure containing the information needed for processing the 
 %                   test samples identically to the training samples
 %
 %======================================================

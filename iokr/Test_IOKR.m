@@ -62,26 +62,3 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, train_model, Y
 end
 
 
-% Additional functions for preprocessing the input/output kernels between
-% the training and test steps
-
-function [ KY_train_cand_cn ] = output_kernel_preprocessing_test( Y_train, Y_cand, KY_par, train_process, ker_center )
-
-    KY_train_cand = build_kernel(Y_train, Y_cand, KY_par);
-    KY_cand = build_kernel(Y_cand, Y_cand, KY_par);
-    
-    KY_train_cand_cn = kernel_preprocessing_test(KY_train_cand, KY_cand, train_process, ker_center);
-end
-
-function [ KX_train_test ] = input_kernel_preprocessing_test( KX_list_train_test, KX_list_test, train_process, ker_center )
-            
-    KX_train_test = zeros(size(KX_list_train_test{1}));
-    
-    for i = 1:length(KX_list_train_test)
-        % Centering and normalization
-        KX_train_test_i_cn = kernel_preprocessing_test(KX_list_train_test{i}, KX_list_test{i}, train_process(i), ker_center);
-        
-        KX_train_test = KX_train_test + train_process(i).w * KX_train_test_i_cn;
-    end
-end
-

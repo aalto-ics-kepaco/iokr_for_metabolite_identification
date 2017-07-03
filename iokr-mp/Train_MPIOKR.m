@@ -60,17 +60,21 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ky_p
         [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, process_output.mean, mp_iokr_param.center, debug_param.verbose);
         
         A1 = I - M * Mean_Psi_C_train;
+        PsiAt = (Psi_train - Mean_Psi_C_train) * A1' + Cov_Psi_C_train*M';
         AAt = A1 * A1' + M * Cov_Psi_C_train * M';
+        
+        C = PsiAt / (lambda_opt * eye(n_kx*n_train) + KX_train * AAt);
     else
         [~, KY_S_C, V, D] = build_tilde_kernel(Y_train, Y_C_train, KY_par_opt, mp_iokr_param);
-        A1 = I - M * KY_S_C * D^2 * V;
-        A2 = M * KY_S_C * (eye(size(D)) - D^2*(V*V')) * D;
-        AAt = A1 * A1' + A2 * A2';
+        A = [I - M * KY_S_C * D^2 * V, M * KY_S_C * (eye(size(D)) - D^2*(V*V')) * D];
+        AAt = A*A';
+        
+        C = (A')/(lambda_opt * eye(n_kx*n_train) + KX_train * AAt);
     end
     
-    C = (lambda_opt * eye(n_kx*n_train) + KX_train * AAt);
+
     
-    train_model = struct('C',C,'process_input',process_input,'process_output',process_output,'KY_par',KY_par_opt);
+    train_model = struct('C',C,'process_input',process_input,'process_output',process_output,'KY_par',KY_par_opt,'gamma_opt',gamma_opt);
     
 end
 

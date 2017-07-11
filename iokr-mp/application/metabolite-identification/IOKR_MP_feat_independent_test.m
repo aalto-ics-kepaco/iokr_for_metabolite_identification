@@ -1,4 +1,4 @@
-function IOKR_MP_reverse_feat_independet_test (inputDir, outputDir, param)
+function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 
@@ -45,11 +45,6 @@ function IOKR_MP_reverse_feat_independet_test (inputDir, outputDir, param)
     
     %% Load data 
     % ... input-kernels for the training examples
-    if (param.debug_param.isDebugMode)
-        % Lets reduce the size of the UNIMKL a bit. This is useful if we
-        % want to debug the 'separate' kernel combination.
-        param.data_param.availInputKernels = {'PPKR', 'NSF', 'CEC', 'CPJ'};
-    end % if
     [KX_list, param] = loadInputKernelsIntoList (strcat (inputDir, '/input_kernels/'), param);
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
@@ -63,35 +58,7 @@ function IOKR_MP_reverse_feat_independet_test (inputDir, outputDir, param)
     % set the seed manualy. For example by using the slurm-job-id. This can
     % be done by the calling sbatch-file.
     rng (param.debug_param.randomSeed);
-    
-    if (param.debug_param.isDebugMode)
-        fprintf ('Show me a random-number: %f\n', rand(1));
-        
-        % Modify the output-dir & creat it if needed
-        outputDir = strcat (outputDir, '/debug/');
-        if (~ exist (outputDir, 'dir'))
-            if (~ mkdir (outputDir))
-                error ('IOKR_MP_reverse_feat_evaluation:RuntimeError', ...
-                    'Could not create debug-directory: %s', outputDir);
-            end % if
-        end % if
-        
-        % The debug-mode is mainly used to have some dry run and check all
-        % the functionality. Nothing should explode during that run, which
-        % gives evidence that in the use-case we also do not encounter
-        % problems. Therefore lets make the following simplifications:
-        param.opt_param = struct (   ...
-            'val_gamma',   [0.5, 1], ...
-            'val_lambda',  [0.5, 1], ...
-            'nOuterFolds', 10,       ...
-            'nInnerFolds', 2);        
-        
-        n = size (KX_list{1}, 1);
-        param.debug_param.debug_set = false (n, 1);        
-        param.debug_param.debug_set(randsample (n, param.debug_param.n_debug_set)) = true;
-        KX_list = cellfun(@(x) x(param.debug_param.debug_set, param.debug_param.debug_set), KX_list, 'UniformOutput', false);
-    end % if
-    
+       
     % ... fingerprints for the training examples
     Y = load (strcat (inputDir, '/fingerprints/fp.mat'));
     Y = full (Y.Y);

@@ -39,7 +39,7 @@ function [ ] = run_IOKR( inputDir, outputDir, cand, model_representation )
         'UniformOutput', false);
     
     % Parameters
-    iokr_param = struct('center',1,'mkl','unimkl');
+    iokr_param = struct('center',1,'mkl','unimkl','model_representation','only_C');
     select_param = struct( ...
         'cv_type','loocv', ...
         'lambda', [1e-5 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1 10 100]);
@@ -75,7 +75,7 @@ function [ ] = run_IOKR( inputDir, outputDir, cand, model_representation )
 
         disp ('TRAINING')
         train_model = Train_IOKR(KX_list_train, Y_train, output_param, ...
-            select_param, iokr_param, model_representation);
+            select_param, iokr_param);
 
         % Prediction 
         KX_list_train_test = cellfun(@(x) x(train_set,test_set), KX_list, 'UniformOutput', false);

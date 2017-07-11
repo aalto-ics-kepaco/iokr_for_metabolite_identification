@@ -45,7 +45,7 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
     
     %% Load data 
     % ... input-kernels for the training examples
-    [KX_list, param] = loadInputKernelsIntoList (strcat (inputDir, '/input_kernels/'), param);
+    [KX_list, param] = loadInputKernelsIntoList (inputDir, param, '.txt');
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
             'No kernel loaded.');
@@ -59,83 +59,55 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
     % be done by the calling sbatch-file.
     rng (param.debug_param.randomSeed);
        
-    % ... fingerprints for the training examples
-    Y = load (strcat (inputDir, '/fingerprints/fp.mat'));
-    Y = full (Y.Y);
-    if (param.debug_param.isDebugMode)
-        Y = Y(:, param.debug_param.debug_set);
-    end % if
+    
+    % ... inchi keys, molecular formulas, fingerprints
+    load ([inputDir '/compound_info.mat'], 'dt_inchi_mf_fp');
     
     % ... identifier (inchis) for the training examples
-    inchis = readtext (strcat (inputDir, '/inchi.txt'));
-    if (param.debug_param.isDebugMode)
-        inchis = inchis(param.debug_param.debug_set);
-    end % if
-    
-    % ... pre-defined cross-validation folds to prevent to train using
-    % molecular structures which are contained in the test
-    ind_fold = load (strcat (inputDir, '/cv_ind.txt'));
-    if (param.debug_param.isDebugMode)
-        ind_fold = ind_fold(param.debug_param.debug_set);
-    end % if
-    
-    % ... candidate sets 
-    mf_corres = load (strcat (inputDir, '/candidates/matching_mf_train.txt'));
-    if (param.debug_param.isDebugMode)
-        mf_corres = mf_corres(param.debug_param.debug_set);
-    end % if
+    inchis = dt_inchi_mf_fp.inchi_key_1; 
+   
+    % ... fingerprints for the training examples
+    Y = full (dt_inchi_mf_fp.fp_masked)';
+    [~,n] = size(Y);
+
+    % Candidates description
+   
     tic;
     if (~ isempty (param.debug_param.cand))
         warning ('Candidate taken from PARAM.DEBUG_PARAM.CAND');
+        
+        mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, ...
+             param.debug_param.cand);
         
         Y_C = CandidateSets (DataHandle (param.debug_param.cand), mf_corres);
         
         param.debug_param.cand = []; 
     else
-        cand = load (strcat (inputDir, '/candidates/GNPS_cand_as_struct_transp.mat'));
-        Y_C = CandidateSets (DataHandle (cand.cand_struct), mf_corres);
+        load ([inputDir '/cand.mat'], 'cand');
+        
+        mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
+        
+        Y_C = CandidateSets (DataHandle (cand), mf_corres);
         
         clear cand;
     end 
     toc;
     
-    ind_eval = load (strcat (inputDir, '/candidates/ind_eval.txt'));
-    eval_set = false (numel (mf_corres), 1);
-    eval_set(ind_eval) = true;
-    if (param.debug_param.isDebugMode)
-        eval_set = eval_set(param.debug_param.debug_set);
-    end % if
+    % eval = find (arrayfun (@(x) cand(x).num < 3000, mf_corres));
+    eval_set = true (numel (mf_corres), 1);
     
     assert (Y_C.getNumberOfExamples() == size (Y, 2), ...
         'The number of examples in the associated with the candidate sets is different from the number of example fingerprint vectors.');    
     
-    %% Load / Store pre-calculated statistics
-    if (param.data_param.usePreCalcStat)
-        cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold), ...
-                           'inner', struct ('nFolds', param.opt_param.nInnerFolds));                       
-        param.data_param.cv_param = cv_param;
-        
-        % NOTE: The selec_ property of Y_C will be modified according to
-        %       the selection defined by PARAM.DATA_PARAM.SELECTION_PARAM.
-        tic;
-        matObj = getPreCalcCandStat_feat (Y, Y_C, inchis, param, strcat (inputDir, '/pre_calculated_stats/'));
-        fprintf ('Loading / pre-calculating of the candidate statistics took %.3fs\n', toc);
-        
-        param.data_param.cv         = matObj.cv;
-        param.mp_iokr_param.center  = matObj.center;
-        param.data_param.repetition = matObj.repetition;
-        % matObj also contains the statistics
-        param.data_param.matObj     = matObj;
-    else       
-        % Select a subset of candidates. By using the default values ALL the 
-        % candidates are selected.
-        selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);      
-        Y_C.setSelectionsOfCandidateSets (selec);
-        
-        cv_param = struct ('outer', struct ('type', 'fixed', 'cvInd', ind_fold));
-        param.data_param.cv_param = cv_param;
-        param.data_param.cv       = getCVIndices (param.data_param.cv_param);
-    end % if
+    %% Load / Store pre-calculated statistics  
+    % Select a subset of candidates. By using the default values ALL the 
+    % candidates are selected.
+    selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);      
+    Y_C.setSelectionsOfCandidateSets (selec);
+
+    cv_param = struct ('nObservations', n, 'outer', struct ('type', 'random', 'nFolds', 10));
+    param.data_param.cv_param = cv_param;
+    param.data_param.cv       = getCVIndices (param.data_param.cv_param);
     
     %% Evaluate the performance using 10-fold cv
     ranks = NaN (Y_C.getNumberOfExamples(), 1);
@@ -148,14 +120,6 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
         data_param_fold.train_set = training_my (param.data_param.cv.outer, foldIdx);
         data_param_fold.test_set  = test_my (param.data_param.cv.outer, foldIdx);
         data_param_fold.usePreCalcStat = param.data_param.usePreCalcStat;
-        
-        if (data_param_fold.usePreCalcStat)
-            % By loading the covariance and mean vectors at this place, we
-            % save some memory, as only the data is loaded which is needed.
-            data_param_fold.cv       = param.data_param.cv.inner{foldIdx};
-            data_param_fold.stats    = param.data_param.matObj.stats(1, foldIdx);
-            data_param_fold.stats_cv = param.data_param.matObj.stats_cv(:, foldIdx);
-        end % if
         
         % Calculate the scores for each candidate corresponding the current
         % test-examples

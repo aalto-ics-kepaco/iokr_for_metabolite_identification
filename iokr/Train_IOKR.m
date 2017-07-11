@@ -29,8 +29,8 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
     fprintf ('Parameter selection (CPU-time): %f\n', cputime - t);
 
     % Kernels processing and kernel combination
-    [KX_train, process_input] = input_kernel_preprocessing_train(KX_list_train, ...
-        w_opt, iokr_param.center);
+    [KX_train, process_input] = input_kernel_preprocessing_train (...
+        KX_list_train, w_opt, iokr_param.center);
     
     t = cputime;
     
@@ -43,12 +43,14 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
         case 'LU_decomp_of_C'
             C          = struct();
             [C.L, C.U] = lu (lambda_opt*eye(size(KX_train)) + KX_train);
+        case 'Chol_decomp_of_C'
+            C = chol (lambda_opt*eye(size(KX_train)) + KX_train, 'lower');
     end % switch     
     
     fprintf ('Training (CPU-time): %f\n', cputime - t);
     
-    train_model = struct('C', C, 'process_input', process_input, 'KY_par', KY_par_opt, ...
-                    'representation', output_param.representation);
-    
+    train_model = struct('C', C, 'process_input', process_input, ...
+        'KY_par', KY_par_opt, ...
+        'representation', output_param.representation);
 end
 

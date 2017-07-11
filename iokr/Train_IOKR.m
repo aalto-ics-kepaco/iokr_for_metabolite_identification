@@ -1,5 +1,5 @@
 function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
-    output_param, select_param, iokr_param, model_representation )
+    output_param, select_param, iokr_param )
 %======================================================
 % DESCRIPTION:
 % Training step of IOKR
@@ -35,14 +35,9 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
     t = cputime;
     
     % Training IOKR with the selected parameter
-    switch model_representation
+    switch iokr_param.model_representation
         case 'only_C'
             C = lambda_opt*eye(size(KX_train)) + KX_train;
-        case 'inverse_of_C'
-            C = inv (lambda_opt*eye(size(KX_train)) + KX_train);
-        case 'LU_decomp_of_C'
-            C          = struct();
-            [C.L, C.U] = lu (lambda_opt*eye(size(KX_train)) + KX_train);
         case 'Chol_decomp_of_C'
             C = chol (lambda_opt*eye(size(KX_train)) + KX_train, 'lower');
     end % switch     
@@ -51,6 +46,7 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
     
     train_model = struct('C', C, 'process_input', process_input, ...
         'KY_par', KY_par_opt, ...
-        'representation', output_param.representation);
+        'representation', output_param.representation, ...
+        'model_representation', iokr_param.model_representation);
 end
 

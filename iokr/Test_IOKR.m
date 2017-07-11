@@ -1,5 +1,5 @@
 function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
-    train_model, Y_train, Y_C_test, ker_center, model_representation )
+    train_model, Y_train, Y_C_test, ker_center )
 %======================================================
 % DESCRIPTION:
 % Prediction step of IOKR
@@ -28,14 +28,9 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
     % Prediction on the test set
     t = cputime;
     
-    switch model_representation
+    switch train_model.model_representation
         case 'only_C'
             B = train_model.C \ KX_train_test;
-        case 'inverse_of_C'
-            B = train_model.C * KX_train_test;
-        case 'LU_decomp_of_C'
-            y = linsolve (train_model.C.L, KX_train_test, struct ('LT', true));
-            B = linsolve (train_model.C.U, y,             struct ('UT', true));
         case 'Chol_decomp_of_C'
             y = linsolve (train_model.C,  KX_train_test, struct ('LT', true));
             B = linsolve (train_model.C', y,             struct ('UT', true));

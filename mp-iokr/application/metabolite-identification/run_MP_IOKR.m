@@ -1,12 +1,13 @@
-function [ ] = run_IOKR( inputDir, outputDir, cand )
+function [ ] = run_MP_IOKR( inputDir, outputDir, cand )
 %======================================================
 % DESCRIPTION:
-% Script for running IOKR on a small test-dataset containing ~260
+% Script for running MP-IOKR on a small test-dataset containing ~260
 % MS2-spectra. 
 %
 % INPUTS:
 % inputDir:     directory in which the data are contained
 % result_dir:   directory in which the results will be saved
+% cand:         candidate set
 %
 % NOTES:  
 %   - Evaluate only on those examples with a candidate-set size smaller
@@ -25,7 +26,6 @@ function [ ] = run_IOKR( inputDir, outputDir, cand )
 
     % inchi keys, molecular formulas, fingerprints
     load ([inputDir '/compound_info.mat'], 'dt_inchi_mf_fp');
-    
     inchi = dt_inchi_mf_fp.inchi_key_1; 
     
     % Extract fingerprints
@@ -36,7 +36,7 @@ function [ ] = run_IOKR( inputDir, outputDir, cand )
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
    
     % Input kernels
-    kernel_files = dir ([inputDir '/*.txt']);
+    kernel_files = dir ([inputDir '/kernels/*.txt']);
     KX_list = arrayfun (@(file) loadKernel ([inputDir '/' file.name]), kernel_files, ...
         'UniformOutput', false);
     

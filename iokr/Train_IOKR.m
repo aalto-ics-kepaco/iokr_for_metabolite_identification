@@ -18,21 +18,21 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
 %
 %======================================================
     
-    t = cputime; 
+%     t = cputime; 
     
     % Selection of the regularization parameter and of the output 
     % kernel parameter(s)
     [lambda_opt, KY_par_opt, w_opt] = Select_param_IOKR ( ...
         KX_list_train, Y_train, output_param, select_param, iokr_param);
-    fprintf ('Optimal lambda = %f\n', lambda_opt);
+%     fprintf ('Optimal lambda = %f\n', lambda_opt);
         
-    fprintf ('Parameter selection (CPU-time): %f\n', cputime - t);
+%     fprintf ('Parameter selection (CPU-time): %f\n', cputime - t);
 
     % Kernels processing and kernel combination
     [KX_train, process_input] = input_kernel_preprocessing_train (...
         KX_list_train, w_opt, iokr_param.center);
     
-    t = cputime;
+%     t = cputime;
     
     % Training IOKR with the selected parameter
     switch iokr_param.model_representation
@@ -42,7 +42,7 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
             C = chol (lambda_opt*eye(size(KX_train)) + KX_train, 'lower');
     end % switch     
     
-    fprintf ('Training (CPU-time): %f\n', cputime - t);
+%     fprintf ('Training (CPU-time): %f\n', cputime - t);
     
     train_model = struct('C', C, 'process_input', process_input, ...
         'KY_par', KY_par_opt, ...

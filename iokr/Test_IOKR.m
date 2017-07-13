@@ -27,7 +27,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
         KX_list_test, train_model.process_input, ker_center);
     
     % Prediction on the test set
-    t = cputime;
+%     t = cputime;
     
     switch train_model.model_representation
         case 'only_C'
@@ -37,7 +37,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
             B = linsolve (train_model.C', y,             struct ('UT', true));
     end % switch
         
-    fprintf ('B-matrix (CPU-time): %f\n', cputime - t);
+%     fprintf ('B-matrix (CPU-time): %f\n', cputime - t);
     
     % Pre-image
     
@@ -53,7 +53,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
     end
    
     % Scoring
-    t = cputime;
+%     t = cputime;
     
     n_test = length(Y_C_test); % number of test examples
     score = cell(n_test,1);
@@ -75,7 +75,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
         end
     end
     
-    fprintf ('Scoring (CPU-time): %f\n', cputime - t);
+%     fprintf ('Scoring (CPU-time): %f\n', cputime - t);
 
 end
 

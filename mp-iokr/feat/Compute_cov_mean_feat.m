@@ -42,7 +42,7 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
             reverseStr = repmat (sprintf ('\b'), 1, length (msg));           
         end % if
         
-        nj = Y_C_train.getCandidateSet(idx, 1, 'num');
+        nj = Y_C_train.getCandidateSet (idx, true, 'num');
         if (isnan (nj))
             % No candidate set for the desired example available.            
             continue
@@ -53,7 +53,7 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
             continue;
         end % if
         
-        Y_Cj = full (Y_C_train.getCandidateSet(idx, 1, 'data'));       
+        Y_Cj = full (Y_C_train.getCandidateSet (idx, true, 'data'));       
         d = size (Y_Cj, 1);
         
         assert (d == numel (mean_Y), ...

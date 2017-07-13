@@ -1,4 +1,8 @@
-function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
+function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExtension)
+    if nargin < 3
+        fileExtension = '.mat';
+    end % if
+
 %% LOADINPUTKERNELLIST
 %   Function to load a list of kernels. Either a single input kernel or a 
 
@@ -6,7 +10,7 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
         case upper (param.data_param.availInputKernels)
             disp (['Evaluation using a single kernel: ', param.data_param.inputKernel]);
 
-            KX_list = { loadKernel(strcat (inputDir, '/', upper (param.data_param.inputKernel), '.mat')) };
+            KX_list = { loadKernel(strcat (inputDir, '/', upper (param.data_param.inputKernel), fileExtension)) };
 
             % If a single kernel is used, than we force the "mkl" option to
             % be 'unimkl'. The weight for the kernel will be 1.
@@ -14,7 +18,7 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param)
         case upper ({'unimkl', 'alignf'})
             disp (['Evaluation using multiple kernel learning: ', param.data_param.inputKernel]);
 
-            KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/', kernelName, '.mat')), ...
+            KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/', kernelName, fileExtension)), ...
                 upper (param.data_param.availInputKernels), 'UniformOutput', false);
 
             param.mp_iokr_param.mkl = lower (param.data_param.inputKernel);

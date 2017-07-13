@@ -18,23 +18,13 @@ function [ vec_gamma_opt ] = Select_param_reverse_IOKR( KX_train_list, Psi_train
 %======================================================
 
     n_kx = length(KX_train_list); % number of input kernels
-    
-    n_train = size(Psi_train,2);
-    
-    KY_train = Psi_train'*Psi_train;
-
+        
     vec_gamma_opt = zeros(n_kx,1);
-    for i = 1:n_kx      
-        mse = zeros(length(val_gamma),1);
-        for ig = 1:length(val_gamma)
-            gamma = val_gamma(ig);
-
-            B = (gamma*eye(n_train) + KY_train) \ KY_train;
-            LOOE = (eye(n_train)-B) / diag(diag(eye(n_train)-B));
-
-            % Compute mean squared error
-            mse(ig) = 1/n_train * trace(LOOE' * KX_train_list{i} * LOOE);
-        end
+    for i = 1:n_kx
+        
+        select_param = struct('lambda', val_gamma, 'cv_type', 'loocv');
+        mse = IOKR_kernel_eval_mse(Psi_train'*Psi_train, KX_train_list{i}, select_param);
+        
         [~,ind_gamma_opt] = min(mse);
         vec_gamma_opt(i) = val_gamma(ind_gamma_opt);      
     end

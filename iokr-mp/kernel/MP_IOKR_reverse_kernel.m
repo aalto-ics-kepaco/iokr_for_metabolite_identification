@@ -31,12 +31,21 @@ function [ score ] = MP_IOKR_reverse_kernel( KX_list, train_set, test_set, Y_tra
     ker_center = param.center; % centering option
 
     % Learning kernel weights with Multiple Kernel Learning  
-    KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
-    w = mkl_weight(param.mkl, KX_list_train, normmat(Y_train'*Y_train));
-    clear KX_list_train
-    
-    % Centering and normalization of input kernel    
-    [KX_train, KX_train_test] = mkl_combine_train_test(KX_list, train_set, test_set, w, ker_center);
+    n_kx = length(KX_list);
+    switch mp_iokr_param.rev_iokr
+        case 'joint' 
+            % Computation of the combined input kernel
+            [KX_train_combined, KX_train_test_combined] = mkl_combine_train_test(KX_list, train_set, test_set, w, mp_iokr_param.center);
+            KX_train_list = {KX_train_combined};
+            KX_train_test_list = {KX_train_test_combined};
+            clear KX_train_combined KX_train_test_combined
+        case 'separate'
+            KX_train_list = cell(n_kx,1);
+            for k = 1:n_k
+                [KX_train_list{k}, ~] = input_kernel_center_norm(KX_list{k}, train_set, test_set, mp_iokr_param.center);
+                KX_train_list{k} = w(k) * KX_train_list{k};
+            end
+    end
     
     % Build output kernel and compute a struct object containing the
     % kernel parameters and the informations needed for kernel centering and normalization

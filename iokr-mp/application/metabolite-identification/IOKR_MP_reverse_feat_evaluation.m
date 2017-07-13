@@ -1,4 +1,4 @@
-function IOKR_MP_reverse_feat_independet_test (inputDir, outputDir, param)
+function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 

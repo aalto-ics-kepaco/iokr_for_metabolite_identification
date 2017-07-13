@@ -40,5 +40,7 @@ function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list
         
     end
     
+    disp ('')
+    
 end
 

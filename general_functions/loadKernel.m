@@ -51,7 +51,7 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
     
     [~, ~, fileExt] = fileparts (filepath);
     switch (fileExt)
-        case {'.txt', '.kernel'}
+        case '.txt'
             % Check whether the kernel-matrix file contains a header. For
             % that read the first line of the kernel-matrix file and parse
             % it. If the line starts with a '#' it will be interpreted as

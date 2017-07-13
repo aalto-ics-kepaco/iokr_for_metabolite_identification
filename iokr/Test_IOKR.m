@@ -1,4 +1,4 @@
-function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
+function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
     train_model, Y_train, Y_C_test, ker_center )
 %======================================================
 % DESCRIPTION:
@@ -23,7 +23,8 @@ function [ score ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
 %======================================================
 
     % Computation of the input kernel between training and test examples
-    KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, KX_list_test, train_model.process_input, ker_center);
+    KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, ...
+        KX_list_test, train_model.process_input, ker_center);
     
     % Prediction on the test set
     t = cputime;

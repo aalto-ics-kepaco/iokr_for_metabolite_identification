@@ -52,7 +52,7 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
     kernel_files = dir ([inputDir '/kernels/*.txt']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_paran.inputKernel = 'unimkl';
+    param.data_param.inputKernel = 'unimkl';
     KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'] , param, '.txt');
     
     %--------------------------------------------------------------

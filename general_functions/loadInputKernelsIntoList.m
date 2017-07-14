@@ -1,10 +1,8 @@
 function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExtension)
+%% LOADINPUTKERNELSINTOLIST Loads a list of kernels matrices.
     if nargin < 3
         fileExtension = '.mat';
     end % if
-
-%% LOADINPUTKERNELLIST
-%   Function to load a list of kernels. Either a single input kernel or a 
 
     switch (upper (param.data_param.inputKernel))
         case upper (param.data_param.availInputKernels)
@@ -28,10 +26,3 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExten
                 param.data_param.inputKernel);
     end % switch
 end % function
-
-%             warning ('Configured to read .txt kernel-files!');
-%             KX_list = { loadKernel(strcat (inputDir, '/input_kernels/', upper (param.data_param.inputKernel), '.txt'), 0) };
-
-%             KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/input_kernels/', kernelName, '.txt'), 0), ...
-%                 upper (param.data_param.availInputKernels), 'UniformOutput', false);
-%             warning ('Configured to read .txt kernel-files!');

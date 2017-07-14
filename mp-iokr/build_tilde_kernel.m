@@ -1,11 +1,11 @@
-function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C_list, KY_par, mp_iokr_param )
+function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, mp_iokr_param )
 %======================================================
 % DESCRIPTION:
 % MP-IOKR: build the tilde output kernel matrix
 %
 % INPUTS:
 % Y:            matrix of size d*n containing the training output vectors
-% Y_C_list:     training candidate output vectors
+% Y_C:          training candidates encapsulated in a CandidateSet object
 % KY_par:       output kernel parameters
 % mp_iokr_param:1*1 struct array containing information relative to
 %               centering and multiple kernel learning
@@ -22,7 +22,8 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C_list, KY_par, m
     
     n = size(Y,2);
     
-    n_Ci = cellfun(@(x) size(x,2),Y_C_list);
+    n_Ci = arrayfun (@(id) cand_set.getCandidateSet (id, true, 'num'), ...
+        1:Y_C.getNumberOfExamples());
     n_C = sum(n_Ci); % total number of candidates
     
     % Build the V and D matrices
@@ -39,7 +40,9 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C_list, KY_par, m
     ind_S = 1:n;
     ind_C = n + (1:n_C);
     
-    Y_C = cell2mat(Y_C_list);
+    
+    Y_C = cell2mat (arrayfun (@(id) cand_set.getCandidateSet (id, true, 'data'), ...
+        1:Y_C.getNumberOfExamples(), 'UniformOutput', false));
     
     % Building and processing the output kernel matrix
     KY1 = build_kernel([Y, Y_C], [Y, Y_C], KY_par);

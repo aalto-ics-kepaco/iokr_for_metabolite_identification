@@ -1,12 +1,13 @@
-function [ ] = run_IOKR( inputDir, outputDir, cand )
+function [ ] = run_IOKR (inputDir, outputDir, cand)
 %======================================================
 % DESCRIPTION:
-% Script for running IOKR on a small test-dataset containing ~260
+% Script for running MP-IOKR on a small test-dataset containing ~260
 % MS2-spectra. 
 %
 % INPUTS:
 % inputDir:     directory in which the data are contained
 % result_dir:   directory in which the results will be saved
+% cand:         candidate set
 %
 % NOTES:  
 %   - Evaluate only on those examples with a candidate-set size smaller
@@ -15,98 +16,85 @@ function [ ] = run_IOKR( inputDir, outputDir, cand )
 %
 %======================================================
 
-    % We fix the random seed to be able to compare the results directly
-    % with mp-iokr.
-    rng (10);
-
     %--------------------------------------------------------------
-    % Load Data
+    % Set up parameters
+    %--------------------------------------------------------------
+    param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+        {'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});
+    
+    param.debug_param.randomSeed = 10;
+    rng (param.debug_param.randomSeed);
+    
+    n_folds = param.opt_param.nOuterFolds;
+   
+    %--------------------------------------------------------------
+    % Load and prepare data
     %--------------------------------------------------------------
 
     % inchi keys, molecular formulas, fingerprints
     load ([inputDir '/compound_info.mat'], 'dt_inchi_mf_fp');
-    
     inchi = dt_inchi_mf_fp.inchi_key_1; 
     
     % Extract fingerprints
     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
-
-    % Candidates description
-    mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
    
-    % Input kernels
-    kernel_files = dir ([inputDir '/*.txt']);
-    KX_list = arrayfun (@(file) loadKernel ([inputDir '/' file.name]), kernel_files, ...
-        'UniformOutput', false);
-    
-    % Parameters
-    iokr_param = struct('center',1,'mkl','unimkl','model_representation','only_C');
-    select_param = struct( ...
-        'cv_type','loocv', ...
-        'lambda', [1e-5 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1 10 100]);
-%     ky_param = struct( ...
-%         'type','gaussian', ...
-%         'base_kernel','tanimoto',...
-%         'param_selection','entropy');
-    ky_param = struct ('type', 'linear', 'base_kernel', 'linear', 'param_selection', 'cv');
-    output_param = struct('representation','kernel','kernel_param',ky_param);
-
-    %--------------------------------------------------------------
     % Cross-validation
-    %--------------------------------------------------------------
-
-    rank = NaN(n,1);
-    cand_num = zeros(n,1); % vector containing the number of candidates for each test example
-
-    n_folds = 10; % number of folds
     cv = getCVIndices (struct ('nObservations', n, ...
         'outer', struct ('type', 'random', 'nFolds', n_folds)));
 
+    % Candidates description
+    mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
+    Y_C       = CandidateSets (DataHandle (cand), mf_corres);
+    assert (Y_C.getNumberOfExamples() == size (Y, 2))
+    
+    % Input kernels
+    kernel_files = dir ([inputDir '/kernels/*.txt']);
+    param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
+        kernel_files, 'UniformOutput', false);
+    param.data_paran.inputKernel = 'unimkl';
+    KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'] , param, '.txt');
+    
+    %--------------------------------------------------------------
+    % Run Cross-validation
+    %--------------------------------------------------------------
+    rank     = NaN (n, 1);
     for i = 1:n_folds
         disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
 
         % Create training and test sets
         test_set  = find (test_my (cv.outer, i));
-        train_set = setdiff(1:n,test_set);
+        train_set = setdiff (1:n, test_set);
         
         % Training
-        KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
-        Y_train = Y(:,train_set);
+        KX_list_train = cellfun(@(x) x(train_set, train_set), KX_list, 'UniformOutput', false);
+        Y_train       = Y(:, train_set);
 
-        train_model = Train_IOKR(KX_list_train, Y_train, output_param, ...
-            select_param, iokr_param);
+        train_model = Train_IOKR (KX_list_train, Y_train, ...
+            param.ky_param, param.opt_param, param.iokr_param);
 
         % Prediction and scoring
         KX_list_train_test = cellfun(@(x) x(train_set,test_set), KX_list, 'UniformOutput', false);
-        KX_list_test = cellfun(@(x) x(test_set,test_set), KX_list, 'UniformOutput', false);
-        Y_C_test = arrayfun(@(x) x.data, cand(mf_corres(test_set)),'UniformOutput',false);
+        KX_list_test       = cellfun(@(x) x(test_set,test_set),  KX_list, 'UniformOutput', false);
+        Y_C_test           = Y_C.getSubset (test_set);
 
-        score = Test_IOKR(KX_list_train_test, KX_list_test, train_model, ...
-            Y_train, Y_C_test, iokr_param.center);
+        scores = Test_IOKR (KX_list_train_test, KX_list_test, train_model, ...
+            Y_train, Y_C_test, param.iokr_param.center);
 
         % Computation of the ranks
-        for j = 1:length(test_set)
-            k = test_set(j);
-
-            inchi_c = cand(mf_corres(k)).id;
-            [~,IX] = sort(score{j},'descend');
-            
-            rank(k) = find(strcmp(inchi_c(IX), inchi{k}));
-            cand_num(k) = length(score{j});
-        end
+        rank(test_set) = getRanksBasedOnScores (Y_C_test, inchi(test_set), scores);
     end
 
     % Computation of the percentage of identified metabolites in the top k
+    cand_num      = arrayfun (@(id) Y_C.getCandidateSet (id, false, 'num'), ...
+        1:Y_C.getNumberOfExamples());
     rank_perc     = getRankPerc (rank, cand_num);
     rank_perc_100 = rank_perc(1:100);
 
     disp (round (rank_perc_100([1, 5, 10, 20]), 3));
 
-    filename = [outputDir, 'rank_mkl=' iokr_param.mkl ...
-        '_kernel=' ky_param.type ...
-        '_base=' ky_param.base_kernel '_' ky_param.param_selection ...
-        '_model_representation=', iokr_param.model_representation];
+    filename = [outputDir, '/iokr/', 'rank_mkl=' param.iokr_param.mkl ...
+        '_kernel=' param.ky_param.type ...
+        '_base=' param.ky_param.base_kernel '_' param.ky_param.param_selection];
     save(filename,'rank_perc_100','-ascii');
-    
 end

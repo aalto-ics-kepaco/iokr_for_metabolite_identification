@@ -26,9 +26,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
     KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, ...
         KX_list_test, train_model.process_input, ker_center);
     
-    % Prediction on the test set
-%     t = cputime;
-    
+    % Prediction on the test set 
     switch train_model.model_representation
         case 'only_C'
             B = train_model.C \ KX_train_test;
@@ -36,9 +34,6 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
             y = linsolve (train_model.C,  KX_train_test, struct ('LT', true));
             B = linsolve (train_model.C', y,             struct ('UT', true));
     end % switch
-        
-%     fprintf ('B-matrix (CPU-time): %f\n', cputime - t);
-    
     % Pre-image
     
     % Preprocessing of the training outputs    
@@ -53,30 +48,26 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
     end
    
     % Scoring
-%     t = cputime;
-    
-    n_test = length(Y_C_test); % number of test examples
+    n_test = Y_C_test.getNumberOfExamples();
     score = cell(n_test,1);
     for j = 1:n_test    
         switch train_model.representation
             case 'feature'
                                 
-                Psi_Cj = norma(Y_C_test{j}, process_output.mean, ker_center);
+                Psi_Cj = norma(Y_C_test.getCandidateSet (j, false, 'data'), ...
+                    process_output.mean, ker_center);
                 
                 score{j} = (Psi_train * B(:,j))' * Psi_Cj;
                 
             case 'kernel'
                 
                 KY_train_Cj = output_kernel_preprocessing_test( ...
-                    Y_train, Y_C_test{j}, train_model.KY_par, ...
-                    process_output, ker_center);
+                    Y_train, Y_C_test.getCandidateSet (j, false, 'data'), ...
+                    train_model.KY_par, process_output, ker_center);
 
                 score{j} = B(:,j)' * KY_train_Cj;
         end
     end
-    
-%     fprintf ('Scoring (CPU-time): %f\n', cputime - t);
-
 end
 
 

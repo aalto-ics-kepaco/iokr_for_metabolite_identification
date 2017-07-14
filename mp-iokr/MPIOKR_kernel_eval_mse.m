@@ -7,7 +7,7 @@ function [ mse ] = MPIOKR_kernel_eval_mse( KX_list, Y, Y_C, KY_par, M, mp_iokr_p
 % INPUTS:
 % KX_list:      cell array containing the training input kernel matrices
 % Y:            matrix containing the training output vectors
-% Y_C_list:     training candidate output vectors
+% Y_C:          training candidates encapsulated in a CandidateSet object
 % KY_par:       output kernel parameters
 % mp_iokr_param:1*1 struct array containing information relative to
 %               centering and multiple kernel learning

@@ -39,7 +39,7 @@ function [ KX_train, process_input ] = mpiokr_input_kernel_preprocessing_train( 
                     
                 case 4 % if gamma_opt is an argument of the function, then we group the kernels by unique gamma values
             
-                   [gamma_opt_u,~,ic] = unique(gamma_opt);
+                    [gamma_opt_u,~,ic] = unique(gamma_opt);
 
                     n_kx = length(gamma_opt_u);
                     KX_train = cell(n_kx, 1);

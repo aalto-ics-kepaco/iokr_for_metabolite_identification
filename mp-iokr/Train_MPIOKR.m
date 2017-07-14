@@ -1,4 +1,5 @@
-function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ky_param, mp_iokr_param, select_param, debug_param )
+function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
+    ky_param, mp_iokr_param, select_param, debug_param )
 %======================================================
 % DESCRIPTION:
 % Training step of Magnitude-preserving IOKR
@@ -6,9 +7,10 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ky_p
 % INPUTS:
 % KX_list_train:    cell array containing the training input kernel matrices
 % Y_train:          matrix of size d*n_train containing the training output vectors
+% Y_C_train:        Candidate sets corresponding to the training examples.
 % output_param:     1*1 struct array containing the information related to the outputs
 % select_param:     1*1 struct array containing information related to the parameter selection 
-% iokr_param:       1*1 struct array containing information relative to
+% iokr_param:       1*1 struct array containing information related to
 %                   centering and multiple kernel learning
 %
 % OUTPUT:
@@ -16,10 +18,12 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ky_p
 %
 %======================================================  
 
-    n_train = size(Y_C_train,2);
+    % Number of training examples
+    n_train = size (Y_train, 2);
 
     % Selection of the regularization parameter and of the output kernel parameters(s)
-    [lambda_opt, gamma_opt, KY_par_opt, w_opt] = Select_param_MPIOKR(KX_list_train, Y_train, Y_C_train, ky_param, select_param, mp_iokr_param);
+    [lambda_opt, gamma_opt, KY_par_opt, w_opt] = Select_param_MPIOKR (KX_list_train, ...
+        Y_train, Y_C_train, ky_param, select_param, mp_iokr_param);
 
     % Input kernel processing
     if (strcmp (mp_iokr_param.rev_iokr, 'separate'))

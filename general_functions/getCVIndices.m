@@ -35,6 +35,17 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
 %       Same as example 1.1, but no inner cross-validation folds will be
 %       created.
 %
+%    * Example 1.3:
+%       cvParam = struct ('nObservations', nObservations, ...
+%                   'randomSeed', fixedRandomSeed,        ...
+%                   'outer', struct ('type', 'random',    ...
+%                                    'nFolds', nOuterFolds))
+%
+%       'fixedRandomSeed' is an integer value which is used as random seed
+%       for the pseudo random generator (PRG). The current state of the
+%       PRG is stored and restored after the outer and inner cv-folds have
+%       been chosen randomly using the fixed seed.
+%
 %    * Example 2.1:
 %       cvParam = struct (                            ...
 %                   'outer', struct ('type', 'fixed', ... 
@@ -126,6 +137,20 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
                 nFoldsOuter = cvParam.outer.nFolds;                
                 nObservations = cvParam.nObservations;
                 
+                % We can explicitly set the random seed to a desired, e.g.
+                % fixed value, in order to ensure the cross-validation
+                % folds to be the same across experiments.
+                if (ismember ('randomSeed', fieldnames (cvParam)))
+                    % Store the current random-state.
+                    oldRandomState = rng;
+                    % Set the current random-seed to a fixed one.
+                    rng (cvParam.randomSeed);
+                    
+                    resetRandomSeed = true;
+                else 
+                    resetRandomSeed = false;
+                end % if
+                
                 cv = struct ('outer', {});
                 if (nFoldsOuter > 1)
                     cv(1).outer = cvpartition (nObservations, 'KFold', nFoldsOuter);
@@ -142,6 +167,11 @@ function cv = getCVIndices (cvParam, modeStr, directory, overwrite)
                     end % for 
                 else 
                     nFoldsInner = NaN;
+                end % if
+                
+                if (resetRandomSeed)
+                    % Restore random-state
+                    rng (oldRandomState);
                 end % if
             case 'fixed'
                 nFoldsOuter = numel (unique (cvParam.outer.cvInd));              

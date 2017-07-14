@@ -1,7 +1,8 @@
-function [ score ] = Test_MPIOKR( KX_list_train_test, KX_list_test, train_model, Y_train, Y_C_train, Y_C_test, mp_iokr_param )
+function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
+    Y_train, Y_C_train, Y_C_test, ker_center )
 %======================================================
 % DESCRIPTION:
-% Prediction step of IOKR
+% Prediction step of MP-IOKR
 %
 % INPUTS:
 % KX_list_train_test:   cell array containing the input kernel matrices
@@ -20,22 +21,21 @@ function [ score ] = Test_MPIOKR( KX_list_train_test, KX_list_test, train_model,
 %                       candidate set
 %
 %======================================================
-
-    ker_center = mp_iokr_param.center;
-
     KY_par_opt = train_model.KY_par;
 
     % Computation of the input kernel between training and test examples
-    KX_list_train_test_processed = mpiokr_input_kernel_preprocessing_test(KX_list_train_test, KX_list_test, train_model.process_input, mp_iokr_param, train_model.gamma_opt);
+    KX_list_train_test_processed = mpiokr_input_kernel_preprocessing_test ( ...
+        KX_list_train_test, KX_list_test, train_model.process_input,        ...
+        mp_iokr_param, train_model.gamma_opt);
     
-    KX_train_test = cell2mat(KX_list_train_test_processed);
+    KX_train_test = cell2mat (KX_list_train_test_processed);
     
     % Prediction on the test set
     B  = train_model.C * KX_train_test;
     
     % Pre-image
-    n_test = length(Y_C_test); % number of test examples
-    score = cell(n_test,1);
+    n_test = length (Y_C_test); % number of test examples
+    score  = cell (n_test,1);
     for j = 1:n_test
         
         switch KY_par_opt.type

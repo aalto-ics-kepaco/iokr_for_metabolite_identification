@@ -313,7 +313,7 @@ classdef CandidateSets < handle
         %
         %    candSet = GETCANDIDATESET (OBJ, ID, ONLYSELECTION) returns the 
         %    candidate set for the example with the given ID. If 
-        %    ONLYSELECTION is set to 1, only those elements belonging to 
+        %    ONLYSELECTION is 'true', only those elements belonging to 
         %    the currently in the object stored selection are returned. The 
         %    fields storing the representations of the candidates (e.g. 
         %    feature vectors) and the identifier (e.g the inchi) are 
@@ -323,9 +323,8 @@ classdef CandidateSets < handle
         %
         %    DATA = GETCANDIDATESET (OBJ, ID, ONLYSELECTION, FIELDNAME) returns
         %    the desired field of the candidate set for the example with
-        %    the given ID. If ONLYSELECTION is set to one, only the
-        %    selected elements are returned (compare description of the
-        %    previous call). 
+        %    the given ID. If ONLYSELECTION is 'true', only the selected 
+        %    elements are returned (compare description of the previous call). 
         %
         %    INPUTS:
         %       obj           Is a valid CandidateSets object.
@@ -333,7 +332,7 @@ classdef CandidateSets < handle
         %                     information is desired.
         %       onlySelection Binary indicating whether only information
         %                     from the selected elements should be
-        %                     returned.                       [default = 0]
+        %                     returned.                   [default = false]
         %       fieldname     String naming the fieldname which should be
         %                     returned.                      [default = '']
         %    OUTPUT:
@@ -371,7 +370,7 @@ classdef CandidateSets < handle
             end % if
             
             if (nargin < 3) % NOTE: 'rhs' is a paramter
-                onlySelection = 0;
+                onlySelection = false;
             end % if
             if (nargin < 4)
                 fieldname = '';
@@ -384,13 +383,13 @@ classdef CandidateSets < handle
             
             % Access element            
             switch (onlySelection) 
-                case 0
+                case false
                     if (isempty (fieldname))
                         lhs = rhs.data_handle_.data_(rhs.lut_(id));
                     else
                         lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname);
                     end % if
-                case 1
+                case true
                     if (isempty (fieldname))
                         % Copy the tree main fields into the output.
                         lhs = struct ();
@@ -482,8 +481,8 @@ classdef CandidateSets < handle
         %       obj             An object of class CANDIDATESETS.
         %       idx             Index of the example it's candidate set
         %                       should be searched for the IDENTIFIER.
-        %       identifier      (1 x 1)-dimensional cell containing the
-        %                       identifier to search for.
+        %       identifier      string containing the identifier to search 
+        %                       for.
         %
         %    OUTPUTS:
         %       selec           Logical vector of the dimension (1 x n_idx).
@@ -495,7 +494,7 @@ classdef CandidateSets < handle
             identifiersOfCandidates = obj.getCandidateSet ( ...
                 idx, 0, CandidateSets.candidateSetFieldnames.identifier);
             
-            selec = strcmp (identifiersOfCandidates, identifier{1});
+            selec = strcmp (identifiersOfCandidates, identifier);
             if (~ any (selec))
 %                 warning ('Identifier not found in candidate set.');
                 

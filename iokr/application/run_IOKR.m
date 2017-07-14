@@ -36,8 +36,8 @@ function [ ] = run_IOKR( inputDir, outputDir, cand )
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
    
     % Input kernels
-    kernel_files = dir ([inputDir '/*.txt']);
-    KX_list = arrayfun (@(file) loadKernel ([inputDir '/' file.name]), kernel_files, ...
+    kernel_files = dir ([inputDir '/kernels/*.txt']);
+    KX_list = arrayfun (@(file) loadKernel ([inputDir '/kernels/' file.name]), kernel_files, ...
         'UniformOutput', false);
     
     % Parameters

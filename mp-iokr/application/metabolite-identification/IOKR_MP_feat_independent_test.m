@@ -45,7 +45,11 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
     
     %% Load data 
     % ... input-kernels for the training examples
-    [KX_list, param] = loadInputKernelsIntoList (inputDir, param, '.txt');
+    kernel_files = dir ([inputDir '/kernels/*.txt']);
+    param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
+        kernel_files, 'UniformOutput', false);
+    param.data_param.inputKernel = 'unimkl';
+    KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'], param, '.txt');
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
             'No kernel loaded.');
@@ -102,15 +106,16 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
     %% Load / Store pre-calculated statistics  
     % Select a subset of candidates. By using the default values ALL the 
     % candidates are selected.
-    selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);      
-    Y_C.setSelectionsOfCandidateSets (selec);
-
-    cv_param = struct ('nObservations', n, 'outer', struct ('type', 'random', 'nFolds', 10));
+    cv_param = struct ('nObservations', n, 'outer', struct ('type', 'random', 'nFolds', param.opt_param.nOuterFolds));
     param.data_param.cv_param = cv_param;
     param.data_param.cv       = getCVIndices (param.data_param.cv_param);
     
+    selec = getCandidateSelection (Y_C, inchis, param.data_param.selection_param);      
+    Y_C.setSelectionsOfCandidateSets (selec);
+    
     %% Evaluate the performance using 10-fold cv
-    ranks = NaN (Y_C.getNumberOfExamples(), 1);
+    ranks      = NaN (Y_C.getNumberOfExamples(), 1);
+    candNum    = arrayfun (@(idx) Y_C.getCandidateSet (idx, false, 'num'), 1:Y_C.getNumberOfExamples());
     debug_info = struct('lambda_opt', [], 'gamma_opt', [], 'mp_err', []);
 
     for foldIdx = 1:param.data_param.cv.outer.NumTestSets
@@ -134,7 +139,16 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
         eval_set_test = eval_set(data_param_fold.test_set);
         
         ranks_test = getRanksBasedOnScores (Y_C_test, inchis_test, scores_test, eval_set_test);
+        
+
+        
         ranks(data_param_fold.test_set) = ranks_test;
+        
+        if (param.debug_param.verbose)
+            rank_perc     = getRankPerc (ranks, candNum);
+            rank_perc_100 = rank_perc(1:100);
+            disp (round (rank_perc_100([1, 5, 10, 20]), 3));
+        end % if
         
         clear data_param_fold;
     end % for
@@ -143,7 +157,7 @@ function IOKR_MP_feat_independent_test (inputDir, outputDir, param)
         'The examples without propper candidate set and examples without rank (due to the absence if a candidate set) must be equal.');
     
     %% Calculate rank percentages
-    candNum = arrayfun (@(idx) Y_C.getCandidateSet (idx, 0, 'num'), 1:Y_C.getNumberOfExamples());
+    
     rankPerc = getRankPerc (ranks, candNum);
     
     %% Store results

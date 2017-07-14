@@ -1,5 +1,5 @@
 function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
-    ky_param, mp_iokr_param, select_param, debug_param )
+    ky_param, mp_iokr_param, opt_param, debug_param )
 %======================================================
 % DESCRIPTION:
 % Training step of Magnitude-preserving IOKR
@@ -23,16 +23,22 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
 
     % Selection of the regularization parameter and of the output kernel parameters(s)
     [lambda_opt, gamma_opt, KY_par_opt, w_opt] = Select_param_MPIOKR (KX_list_train, ...
-        Y_train, Y_C_train, ky_param, select_param, mp_iokr_param);
+        Y_train, Y_C_train, ky_param, opt_param, mp_iokr_param, debug_param);
+    if (debug_param.verbose)
+        fprintf ('lambda_opt: %f\n', lambda_opt);
+        disp ('gamma_opt:');
+        disp (gamma_opt);
+    end % if
 
     % Input kernel processing
     if (strcmp (mp_iokr_param.rev_iokr, 'separate'))
-        [KX_train, process_input] = mpiokr_input_kernel_preprocessing_train(KX_list_train, w_opt, mp_iokr_param, gamma_opt);
-        gamma_opt = unique(gamma_opt);
+        [KX_train, process_input] = mpiokr_input_kernel_preprocessing_train (KX_list_train, w_opt, mp_iokr_param, gamma_opt);
+        gamma_opt_u = unique(gamma_opt);
     else
-        [KX_train, process_input] = mpiokr_input_kernel_preprocessing_train(KX_list_train, w_opt, mp_iokr_param);
+        [KX_train, process_input] = mpiokr_input_kernel_preprocessing_train (KX_list_train, w_opt, mp_iokr_param);
     end
     n_kx = length(KX_train);
+    KX_train = blkdiag (KX_train{:});
     
     % Output processing
     if strcmp(ky_param.type,'linear')
@@ -45,12 +51,13 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     Mc = cell(n_kx,1);
     for k = 1:n_kx
         if strcmp(KY_par_opt.type,'linear')
-            Mc{k} = (gamma_opt(k) * eye(n_train) + (Psi_train'*Psi_train)) \ (Psi_train');
+            Mc{k} = (gamma_opt_u(k) * eye(n_train) + (Psi_train'*Psi_train)) \ (Psi_train');
         else
-            Mc{k} = inv(gamma_opt(k) * eye(n_train) + KY_train);
+            Mc{k} = inv(gamma_opt_u(k) * eye(n_train) + KY_train);
         end
     end
     M = cell2mat(Mc);
+    clear Mc;
     
     Ic = cell(n_kx,1);
     for k = 1:n_kx
@@ -75,9 +82,7 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
         
         C = (A')/(lambda_opt * eye(n_kx*n_train) + KX_train * AAt);
     end
-    
-
-    
+   
     train_model = struct('C',C,'process_input',process_input,'process_output',process_output,'KY_par',KY_par_opt,'gamma_opt',gamma_opt);
     
 end

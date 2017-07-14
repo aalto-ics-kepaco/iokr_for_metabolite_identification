@@ -1,5 +1,5 @@
 function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
-    Y_train, Y_C_train, Y_C_test, ker_center )
+    Y_train, Y_C_train, Y_C_test, mp_iokr_param, ker_center )
 %======================================================
 % DESCRIPTION:
 % Prediction step of MP-IOKR
@@ -34,14 +34,14 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
     B  = train_model.C * KX_train_test;
     
     % Pre-image
-    n_test = length (Y_C_test); % number of test examples
+    n_test = Y_C_test.getNumberOfExamples();
     score  = cell (n_test,1);
     for j = 1:n_test
         
         switch KY_par_opt.type
             case 'linear'
                                                  
-                Psi_Cj = norma(Y_C_test{j}, mean(Y_train,2), ker_center);
+                Psi_Cj = norma(Y_C_test.getCandidateSet (j, false, 'data'), mean(Y_train,2), ker_center);
                 
                 score{j} = B(:,j)' * Psi_Cj;
                 
@@ -68,9 +68,12 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
                 
                 % Computation of the output kernel between the training +
                 % candidate training examples and the candidate set Cj
-                KY_all = build_kernel(Y_train_all,Y_train_all, KY_par_opt);
-                KY_all_Cj = build_kernel(Y_train_all,Y_C_test{j},KY_par_opt);
-                KY_Cj = build_kernel(Y_C_test{j},Y_C_test{j},KY_par_opt);
+                KY_all    = build_kernel (Y_train_all, Y_train_all, ...
+                    KY_par_opt);
+                KY_all_Cj = build_kernel (Y_train_all, Y_C_test.getCandidateSet (j, false, 'data'), ...
+                    KY_par_opt);
+                KY_Cj     = build_kernel (Y_C_test.getCandidateSet (j, false, 'data'), ...
+                    Y_C_test.getCandidateSet (j, false, 'data'), KY_par_opt);
                 
                 % Centering
                 KY_all_c = center(KY_all, mean(KY_all(ind_S,ind_S),2), ker_center, mean(KY_all(:,ind_S),2), mean(KY_all(ind_S,:),1)); % centering

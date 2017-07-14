@@ -58,7 +58,7 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
     %--------------------------------------------------------------
     % Run Cross-validation
     %--------------------------------------------------------------
-    rank     = NaN (n, 1);
+    rank = NaN (n, 1);
     for i = 1:n_folds
         disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
 

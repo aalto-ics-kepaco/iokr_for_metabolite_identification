@@ -20,12 +20,13 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     % Set up parameters
     %--------------------------------------------------------------
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});
+        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
     
     param.debug_param.randomSeed = 10;
     rng (param.debug_param.randomSeed);
     
     n_folds = param.opt_param.nOuterFolds;
+    param.opt_param.nInnerFolds = 10;
    
     %--------------------------------------------------------------
     % Load and prepare data
@@ -50,7 +51,7 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     % Candidate selection
     param.data_param.selection_param = struct ( ...
         'strategy', 'random', 'perc', 1, 'inclExpCand', false);
-    selec                            = getCandidateSelection (Y_C, inchis, ...
+    selec                            = getCandidateSelection (Y_C, inchi, ...
         param.data_param.selection_param);      
     Y_C.setSelectionsOfCandidateSets (selec);
     
@@ -58,13 +59,15 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     kernel_files = dir ([inputDir '/kernels/*.txt']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_paran.inputKernel = 'unimkl';
-    KX_list = loadInputKernelsIntoList (inputDir, param, '.txt');
+    param.data_param.inputKernel = 'unimkl';
+    KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'], param, '.txt');
     
     %--------------------------------------------------------------
     % Run Cross-validation
     %--------------------------------------------------------------
     rank     = NaN (n, 1);
+    cand_num = arrayfun (@(id) Y_C.getCandidateSet (id, false, 'num'), ...
+        1:Y_C.getNumberOfExamples());
     for i = 1:n_folds
         disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
 
@@ -78,7 +81,7 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
         Y_C_train     = Y_C.getSubset (train_set);
 
         train_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
-            param.ky_param, param.mp_iokr_param, param.select_param, param.debug_param);
+            param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
 
         % Prediction and scoring
         KX_list_train_test = cellfun(@(x) x(train_set,test_set), KX_list, 'UniformOutput', false);
@@ -86,22 +89,26 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
         Y_C_test           = Y_C.getSubset (test_set);
 
         scores = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
-            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param.center);
+            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param, param.mp_iokr_param.center);
 
         % Computation of the ranks
         rank(test_set) = getRanksBasedOnScores (Y_C_test, inchi(test_set), scores);
+        
+        if (param.debug_param.verbose)
+            rank_perc     = getRankPerc (rank, cand_num);
+            rank_perc_100 = rank_perc(1:100);
+            disp (round (rank_perc_100([1, 5, 10, 20]), 3));
+        end % if
     end
 
     % Computation of the percentage of identified metabolites in the top k
-    cand_num      = arrayfun (@(id) Y_C.getCandidateSet (id, false, 'num'), ...
-        1:Y_C.getNumberOfExamples());
     rank_perc     = getRankPerc (rank, cand_num);
     rank_perc_100 = rank_perc(1:100);
 
     disp (round (rank_perc_100([1, 5, 10, 20]), 3));
 
-    filename = [outputDir, '/mpiokr/', 'rank_mkl=' iokr_param.mkl ...
-        '_kernel=' ky_param.type ...
-        '_base=' ky_param.base_kernel '_' ky_param.param_selection];
+    filename = [outputDir, '/mpiokr/', 'rank_mkl=', param.mp_iokr_param.mkl ...
+        '_kernel=' param.ky_param.type ...
+        '_base=' param.ky_param.base_kernel '_' param.ky_param.param_selection];
     save(filename,'rank_perc_100','-ascii');
 end

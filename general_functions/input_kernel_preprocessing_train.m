@@ -20,7 +20,7 @@ function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list
     
     n_kx = length(KX_list_train); % number of input kernels
     
-    n_train = size(KX_list_train{1}); % number of training examples
+    n_train = size(KX_list_train{1}, 1); % number of training examples
 
     % Centering and normalization of the input kernels and kernel combination
     

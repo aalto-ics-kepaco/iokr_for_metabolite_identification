@@ -34,7 +34,9 @@ function [ KX_train, process_input ] = mpiokr_input_kernel_preprocessing_train( 
                     KX_train = cell(n_kx, 1);
                     process_input = struct('w',{},'mean',{},'diag_c',{});
                     for j = 1:n_kx
-                        [KX_train{j},process_input(j)] = input_kernel_preprocessing_train(KX_list_train{j}, w(j), mp_iokr_param.center);
+                        [KX_train{j},process_input(j)] = ...
+                            input_kernel_preprocessing_train(KX_list_train(j), ...
+                            w(j), mp_iokr_param.center);
                     end
                     
                 case 4 % if gamma_opt is an argument of the function, then we group the kernels by unique gamma values
@@ -45,7 +47,9 @@ function [ KX_train, process_input ] = mpiokr_input_kernel_preprocessing_train( 
                     KX_train = cell(n_kx, 1);
                     process_input = struct('w',{},'mean',{},'diag_c',{});
                     for j = 1:n_kx
-                        [KX_train{j},process_input(j)] = input_kernel_preprocessing_train(KX_list_train(ic==j), w(ic==j), mp_iokr_param.center);
+                        [KX_train{j}, process_input(ic==j)] = ...
+                            input_kernel_preprocessing_train (KX_list_train(ic==j), ...
+                            w(ic==j), mp_iokr_param.center);
                     end
             end
             

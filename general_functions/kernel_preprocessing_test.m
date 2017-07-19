@@ -26,7 +26,7 @@ function [ K_train_test_cn ] = kernel_preprocessing_test( K_train_test, K_test, 
         mean_K_train_test', mean_K_train_test);
     
     % normalization
-    if all (size (K_test_c) > 1)
+    if (~ isvector (K_test_c))
         K_train_test_cn = normmat(K_train_test_c, train_process.diag_c, ...
             diag(K_test_c));
     else 

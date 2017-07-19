@@ -93,14 +93,15 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
 %             end
 %         end
 %         M = cell2mat (Mc);
+%         clear Mc;
 
         % Computation of the MSE for the different regularization parameters
         if strcmp (ky_param.type, 'linear')
             mse(:,ip) = MPIOKR_feature_eval_mse (KX_train, Psi_train, process_output.mean, ...
                 Y_C_train, gamma_opt_red, mp_iokr_param, opt_param, debug_param);
         else
-            assert (false, 'The M matrix needs to be calculated for each inner fold.');
-            mse(:,ip) = MPIOKR_kernel_eval_mse (KX_train, Y_train, Y_C_train, ky_param_all_comb(ip), M, mp_iokr_param, opt_param);
+            mse(:,ip) = MPIOKR_kernel_eval_mse (KX_train, Y_train, Y_C_train, ...
+                ky_param_all_comb(ip), gamma_opt_red, mp_iokr_param, opt_param, debug_param);
         end
     end
 
@@ -109,6 +110,11 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
     [ind_lambda_opt, ind_KY_param_opt] = ind2sub(size(mse),I);
 
     lambda_opt = val_lambda(ind_lambda_opt);
+    
+    if (debug_param.verbose)
+        fprintf ('Optimal lambda: %f\n', lambda_opt);
+    end % if
+    
     KY_par_opt = ky_param_all_comb(ind_KY_param_opt);
     w_opt = w{ind_KY_param_opt};
 

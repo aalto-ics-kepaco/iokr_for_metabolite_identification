@@ -24,15 +24,15 @@ function [ K_c ] = center( K, mean_K_train, center_opt, mean_K_1_train, mean_K_t
     end
     
     
-    if center_opt == 1
-        if all ([n1,n2] > 1) 
+    if (center_opt == 1)
+        if (~ isvector (K))
             % Kernel matrix provided
             K_c = K - repmat(mean_K_train_2,n1,1) - ...
                 repmat(mean_K_1_train,1,n2) + mean(mean_K_train);
         else
             % Only diagonal of kernel matrix provided, e.g. if we need to
             % center the kernel matrix between all candidates.
-           K_c = K(:) - mean_K_train_2(:) - mean_K_1_train(:) + mean(mean_K_train);
+           K_c = K(:) - mean_K_train_2(:) - mean_K_1_train(:) + mean (mean_K_train);
         end 
     else
         K_c = K;

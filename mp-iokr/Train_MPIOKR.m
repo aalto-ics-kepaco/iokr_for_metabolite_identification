@@ -44,7 +44,7 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     if strcmp(ky_param.type,'linear')
         [Psi_train, process_output] = output_feature_preprocessing_train(Y_train, mp_iokr_param.center);
     else
-        [KY_train, process_output] = output_kernel_preprocessing_train(Y_train, ky_param_all_comb(ip), mp_iokr_param.center);
+        [KY_train, process_output] = output_kernel_preprocessing_train(Y_train, ky_param, mp_iokr_param.center);
     end
     
     % Computation of the matrices M and I
@@ -76,7 +76,7 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
         
         C = PsiAt / (lambda_opt * eye(n_kx*n_train) + KX_train * AAt);
     else
-        [~, KY_S_C, V, D] = build_tilde_kernel(Y_train, Y_C_train, KY_par_opt, mp_iokr_param);
+        [~, KY_S_C, V, D] = build_tilde_kernel(Y_train, Y_C_train, KY_par_opt, mp_iokr_param, debug_param);
         A = [I - M * KY_S_C * D^2 * V, M * KY_S_C * (eye(size(D)) - D^2*(V*V')) * D];
         AAt = A*A';
         

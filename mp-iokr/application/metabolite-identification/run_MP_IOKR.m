@@ -27,6 +27,7 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     
     n_folds = param.opt_param.nOuterFolds;
     param.opt_param.nInnerFolds = 10;
+%     param.opt_param.val_lambda = [param.opt_param.val_lambda, 1000, 10000, 100000];
    
     %--------------------------------------------------------------
     % Load and prepare data
@@ -39,6 +40,10 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     % Extract fingerprints
     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
+    param.ky_param.representation  = 'kernel';
+    param.ky_param.type            = 'tanimoto';
+    param.ky_param.base_kernel     = 'gaussian';
+    param.ky_param.param_selection = 'entropy';
    
     % Cross-validation
     cv = getCVIndices (struct ('nObservations', n, ...
@@ -49,10 +54,12 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     Y_C       = CandidateSets (DataHandle (cand), mf_corres);
     assert (Y_C.getNumberOfExamples() == size (Y, 2))
     % Candidate selection
+%     param.data_param.selection_param = struct ( ...
+%         'strategy', 'random', 'perc', 1, 'inclExpCand', false);
     param.data_param.selection_param = struct ( ...
-        'strategy', 'random', 'perc', 1, 'inclExpCand', false);
-    selec                            = getCandidateSelection (Y_C, inchi, ...
-        param.data_param.selection_param);      
+        'strategy', 'maxElement', 'maxNumCand', 10, 'inclExpCand', false);
+    selec = getCandidateSelection (Y_C, inchi, ...
+       param.data_param.selection_param);      
     Y_C.setSelectionsOfCandidateSets (selec);
     
     % Input kernels
@@ -89,7 +96,7 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
         Y_C_test           = Y_C.getSubset (test_set);
 
         scores = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
-            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param, param.mp_iokr_param.center);
+            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param, param.mp_iokr_param.center, param.debug_param);
 
         % Computation of the ranks
         rank(test_set) = getRanksBasedOnScores (Y_C_test, inchi(test_set), scores);
@@ -107,8 +114,11 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
 
     disp (round (rank_perc_100([1, 5, 10, 20]), 3));
 
-    filename = [outputDir, '/mpiokr/', 'rank_mkl=', param.mp_iokr_param.mkl ...
-        '_kernel=' param.ky_param.type ...
-        '_base=' param.ky_param.base_kernel '_' param.ky_param.param_selection];
+    filename = [outputDir, '/mpiokr/', 'rank_mkl=', param.mp_iokr_param.mkl, ...
+        '_kernel=', param.ky_param.type, ...
+        '_base=', param.ky_param.base_kernel, ...
+        '_', param.ky_param.param_selection, ...
+        '_strategy=', param.data_param.selection_param.strategy, ...
+        '_inclCandExp', num2str(param.data_param.selection_param.inclCandExp)];
     save(filename,'rank_perc_100','-ascii');
 end

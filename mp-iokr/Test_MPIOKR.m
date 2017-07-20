@@ -124,13 +124,13 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
                     D_I_minus_D_squaredVVt*KY_all_Cj_cn(ind_C,:)];
                 
                 score{j} = B(:,j)' * KY_tilde_Cj;           
-        end % switch
-        
-        if (debug_param.verbose)
-           fprintf ('Scoring %d/%d with m=%d train-candidates and m_j=%d test-candidates: %.3fs\n', ...
-               j, n_test, n_C_train, ...
-               Y_C_test.getCandidateSet (j, false, 'num'), toc);
-        end % if        
+                
+                if (debug_param.verbose)
+                    fprintf ('Scoring %d/%d with m=%d train-candidates and m_j=%d test-candidates: %.3fs\n', ...
+                        j, n_test, n_C_train, ...   
+                        Y_C_test.getCandidateSet (j, false, 'num'), toc);
+                end % if   
+        end % switch     
     end % for
 
 end

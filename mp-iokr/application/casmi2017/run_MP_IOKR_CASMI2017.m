@@ -1,4 +1,4 @@
-function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
+function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, cand)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -22,6 +22,8 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
       
+    param.opt_param.nInnerFolds = 2;
+    
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
@@ -32,15 +34,10 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
     
     % Extract fingerprints
     Y_train = full (dt_inchi_mf_fp.fp_masked)';
-    [~,n] = size(Y_train);
     param.ky_param.representation  = 'feature';
     param.ky_param.type            = 'linear';
     param.ky_param.base_kernel     = 'linear';
     param.ky_param.param_selection = 'cv';
-   
-    % Cross-validation
-    cv = getCVIndices (struct ('nObservations', n, ...
-        'outer', struct ('type', 'random', 'nFolds', n_folds)));
 
     % Candidates description
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
@@ -49,6 +46,10 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
     
     % Candidate selection
     % TODO: WE USE ALL THE CANDIDATES FOR THE MOMENT
+    param.data_param.selection_param = struct ( ...
+        'strategy', 'random', 'perc', 1, 'inclExpCand', false);
+    selec = getCandidateSelection (Y_C_train, inchi, param.data_param.selection_param);      
+    Y_C_train.setSelectionsOfCandidateSets (selec);
     
     % Input kernels
     kernel_files = dir ([input_dir_training '/kernels/*.txt']);
@@ -79,15 +80,15 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
     %       FORMULA WITH THE HIGHEST SCORE.
     
     challenge_ids = 46:243;
-    for challenge_idx = challenge_ids'
+    for challenge_idx = challenge_ids
         fprintf ('Calculate scores for challenge %d\n', challenge_idx);
         
         % Load the train vs. test and test vs. test kernels
         challenge_KX_train_test_fn = dir (sprintf ( ...
-            '%s/kernels_train_test/challenge-%03d-msms.mfg-_01_*.kernels', ...
+            '%s/kernels_training_test/challenge-%03d-msms.mgf_01_*.kernels', ...
             input_dir_test, challenge_idx));
         challenge_KX_test_fn       = dir (sprintf ( ...
-            '%s/kernels_test_test/challenge-%03d-msms.mfg-_01_*.test_kernels', ...
+            '%s/kernels_test_test/challenge-%03d-msms.mgf_01_*.test_kernels', ...
             input_dir_test, challenge_idx));
         
         challenge_KX_train_test_fn = challenge_KX_train_test_fn.name;
@@ -96,17 +97,29 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
         fprintf ('Filename KX_train_test: %s\n', challenge_KX_train_test_fn)
         fprintf ('Filename KX_test: %s\n',       challenge_KX_test_fn)
         
-        KX_list_train_test = read_challenge_kernel (challenge_KX_train_test_fn);
-        KX_list_test       = read_challenge_kernel (challenge_KX_test_fn);
+        [KX_list_train_test, KX_names] = read_challenge_kernel ( ...
+            [input_dir_test, '/kernels_training_test/', challenge_KX_train_test_fn]);
+        [~, locb]                      = ismember (upper (KX_names), param.data_param.availInputKernels);
+        KX_list_train_test             = KX_list_train_test(locb);
         
+        [KX_list_test, KX_names] = read_challenge_kernel ( ...
+            [input_dir_test, '/kernels_test_test/', challenge_KX_test_fn]);
+        [~, locb]                = ismember (upper (KX_names), param.data_param.availInputKernels);
+        KX_list_test             = KX_list_test(locb);
+%         
+%         KX_list_train_test = cellfun (@(x) x(1:260, 1), KX_list_train_test, ...
+%             'UniformOutput', false);
+%         
         % Load molecular candidates
         challenge_cand_fn = sprintf ( ...
-            '%s/candidates_nonredundant/candidates-challenge-%03d-inchi-level1-nonredundant.fpt.mat', ...
+            '%s/candidates-challenge-%03d-inchi-level1-nonredundant.fpt.mat', ...
             input_dir_test, challenge_idx);
         fprintf ('Filename candidates: %s\n', challenge_cand_fn);
         
-        tmp      = load (challenge_cand_fn);
-        Y_C_test = CandidateSets (tmp.cand, 1);
+        tmp         = load (challenge_cand_fn);
+        tmp.cand.id = tmp.cand.id';
+%         tmp.cand.data = tmp.cand.data(1:709,:);
+        Y_C_test    = CandidateSets (DataHandle (tmp.cand), 1);
         
         % Calcualte and write out scores
         scores_test = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
@@ -114,7 +127,7 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir)
         
         inchis_test = Y_C_test.getCandidateSet (1, false, 'id');
         
-        result_test = table (inchis_test, scores_test, 'VariableNames', {'inchi', 'score'});
+        result_test = table (inchis_test', scores_test{1}', 'VariableNames', {'inchi', 'score'});
         writetable (result_test, sprintf ('%s/mpiokr-4-%03d.txt', output_dir, challenge_idx), ...
             'Delimiter', '\t', 'WriteVariableNames', false);
     end % for

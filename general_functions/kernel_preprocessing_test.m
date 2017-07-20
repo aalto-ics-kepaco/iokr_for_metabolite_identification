@@ -21,9 +21,9 @@ function [ K_train_test_cn ] = kernel_preprocessing_test( K_train_test, K_test, 
     mean_K_train_test = mean(K_train_test, 1);
     
     K_train_test_c = center(K_train_test, mean_K_train, ker_center, ...
-        mean_K_train', mean_K_train_test);
+        mean_K_train', mean_K_train_test, true);
     K_test_c       = center(K_test,       mean_K_train, ker_center, ...
-        mean_K_train_test', mean_K_train_test);
+        mean_K_train_test', mean_K_train_test, true);
     
     % normalization
     if (~ isvector (K_test_c))

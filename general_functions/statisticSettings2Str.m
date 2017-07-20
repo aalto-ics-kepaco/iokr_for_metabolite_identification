@@ -39,7 +39,7 @@ function str = statisticSettings2Str (varargin)
                         otherStr, varargin{i}, varargin{i + 1});
                 else
                     assert (0, 'Upps?!: How should I compile a filename using an object of class %s?', ...
-                        class (ischar (varargin{i + 1}))
+                        class (ischar (varargin{i + 1})));
                 end % if
         end % switch
     end % for

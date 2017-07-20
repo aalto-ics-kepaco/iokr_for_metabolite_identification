@@ -1,4 +1,4 @@
-function [ K_c ] = center( K, mean_K_train, center_opt, mean_K_1_train, mean_K_train_2, force_treating_as_matrix )
+function [ K_c ] = center( K, mean_K_train, center_opt, mean_K_1_train, mean_K_train_2, is_diagonal_K )
 %======================================================
 % DESCRIPTION:
 % Centering a kernel Gram matrix in the feature space relative to the n
@@ -19,30 +19,23 @@ function [ K_c ] = center( K, mean_K_train, center_opt, mean_K_1_train, mean_K_t
     [n1,n2] = size(K);
     
     if nargin < 6
-        force_treating_as_matrix = false;
+        is_diagonal_K = false;
     end % if
     
     if nargin == 3 % when X1 = X2 = X_train
         mean_K_1_train = mean_K_train';
         mean_K_train_2 = mean_K_train;
-    end
+    end  
     
     
     if (center_opt == 1)
-        if (force_treating_as_matrix)
-            % Kernel matrix provided
+        if (is_diagonal_K)
+            % Only diagonal of kernel matrix provided, e.g. if we need to
+            % center the kernel matrix between all candidates.
+            K_c = K(:) - mean_K_train_2(:) - mean_K_1_train(:) + mean (mean_K_train);
+        else
             K_c = K - repmat(mean_K_train_2,n1,1) - ...
                 repmat(mean_K_1_train,1,n2) + mean(mean_K_train);
-        else
-            if (~ isvector (K))
-                % Kernel matrix provided
-                K_c = K - repmat(mean_K_train_2,n1,1) - ...
-                    repmat(mean_K_1_train,1,n2) + mean(mean_K_train);
-            else
-                % Only diagonal of kernel matrix provided, e.g. if we need to
-                % center the kernel matrix between all candidates.
-               K_c = K(:) - mean_K_train_2(:) - mean_K_1_train(:) + mean (mean_K_train);
-            end 
         end % if
     else
         K_c = K;

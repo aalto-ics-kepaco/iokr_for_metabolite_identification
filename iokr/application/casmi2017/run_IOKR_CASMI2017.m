@@ -1,4 +1,4 @@
-function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, cand)
+function run_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, param)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -19,37 +19,23 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-    param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
-      
-%     param.opt_param.nInnerFolds = 2;
-    
+%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+%         {'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});
+%     
+%     param.iokr_param.model_representation = 'Chol_decomp_of_C';
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
 
     % inchi keys, molecular formulas, fingerprints
-    load ([input_dir_training '/compound_info.mat'], 'dt_inchi_mf_fp');
-    inchi = dt_inchi_mf_fp.inchi_key_1; 
+    load ([input_dir_training '/compounds/compound_info.mat'], 'dt_inchi_mf_fp');
     
     % Extract fingerprints
     Y_train = full (dt_inchi_mf_fp.fp_masked)';
-    param.ky_param.representation  = 'feature';
-    param.ky_param.type            = 'linear';
-    param.ky_param.base_kernel     = 'linear';
-    param.ky_param.param_selection = 'cv';
-
-    % Candidates description
-    mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
-    Y_C_train = CandidateSets (DataHandle (cand), mf_corres);  
-    assert (Y_C_train.getNumberOfExamples() == size (Y_train, 2))
-    
-    % Candidate selection
-    % TODO: WE USE ALL THE CANDIDATES FOR THE MOMENT
-    param.data_param.selection_param = struct ( ...
-        'strategy', 'random', 'perc', 5, 'inclExpCand', false);
-    selec = getCandidateSelection (Y_C_train, inchi, param.data_param.selection_param);      
-    Y_C_train.setSelectionsOfCandidateSets (selec);
+%     param.ky_param.representation  = 'feature';
+%     param.ky_param.type            = 'linear';
+%     param.ky_param.base_kernel     = 'linear';
+%     param.ky_param.param_selection = 'cv';
     
     % Input kernels
     kernel_files = dir ([input_dir_training '/kernels/*.mat']);
@@ -61,14 +47,13 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     %--------------------------------------------------------------
     % Train the model using all the training data
     %--------------------------------------------------------------
-    train_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
-            param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
+    train_model = Train_IOKR (KX_list_train, Y_train, ...
+            param.ky_param, param.iokr_param, param.opt_param);
 %     save ([input_dir_training, '/train_model.mat'], 'train_model', '-v7.3');
     
-    filename = [input_dir_training, '/train_model_mpiokr_mkl=', param.mp_iokr_param.mkl, ...
+    filename = [input_dir_training, '/train_model_iokr_mkl=', param.iokr_param.mkl, ...
        '_kernel=', param.ky_param.type, ...
-       '_base=', param.ky_param.base_kernel, '_', param.ky_param.param_selection, ...
-       '_strategy=', param.data_param.selection_param.strategy, '.mat'];
+       '_base=', param.ky_param.base_kernel, '_', param.ky_param.param_selection, '.mat'];
     save (filename, 'train_model', '-v7.3');
         
     %--------------------------------------------------------------
@@ -120,8 +105,8 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
         Y_C_test    = CandidateSets (DataHandle (tmp.cand), 1);
         
         % Calcualte and write out scores
-        scores_test = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
-            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param, param.mp_iokr_param.center, param.debug_param);
+        scores_test = Test_IOKR (KX_list_train_test, KX_list_test, train_model, ...
+            Y_train, Y_C_test, param.iokr_param.center);
         
         inchis_test = Y_C_test.getCandidateSet (1, false, 'id');
         

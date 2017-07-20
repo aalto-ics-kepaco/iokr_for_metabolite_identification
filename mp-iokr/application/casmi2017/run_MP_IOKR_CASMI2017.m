@@ -22,7 +22,7 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
       
-    param.opt_param.nInnerFolds = 2;
+%     param.opt_param.nInnerFolds = 2;
     
     %--------------------------------------------------------------
     % Load and prepare data
@@ -63,15 +63,13 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     %--------------------------------------------------------------
     train_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
             param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
-    save ([input_dir_training, '/train_model.mat'], 'train_model', '-v7.3');
+%     save ([input_dir_training, '/train_model.mat'], 'train_model', '-v7.3');
     
-    %    filename = [output_dir, '/mpiokr/', 'rank_mkl=', param.mp_iokr_param.mkl, ...
-    %    '_kernel=', param.ky_param.type, ...
-    %    '_base=', param.ky_param.base_kernel, ...
-    %    '_', param.ky_param.param_selection, ...
-    %    '_strategy=', param.data_param.selection_param.strategy, ...
-    %    '_inclCandExp', num2str(param.data_param.selection_param.inclCandExp)];
-    %save(filename,'rank_perc_100','-ascii');
+    filename = [input_dir_training, '/train_model_mkl=', param.mp_iokr_param.mkl, ...
+       '_kernel=', param.ky_param.type, ...
+       '_base=', param.ky_param.base_kernel, '_', param.ky_param.param_selection, ...
+       '_strategy=', param.data_param.selection_param.strategy, '.mat'];
+    save (filename, 'train_model', '-v7.3');
         
     %--------------------------------------------------------------
     % Get the scoring for each challenge
@@ -106,7 +104,7 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
             [input_dir_test, '/kernels_test_test/', challenge_KX_test_fn]);
         [~, locb]                = ismember (upper (KX_names), param.data_param.availInputKernels);
         KX_list_test             = KX_list_test(locb);
-%         
+        
 %         KX_list_train_test = cellfun (@(x) x(1:260, 1), KX_list_train_test, ...
 %             'UniformOutput', false);
 %         
@@ -127,7 +125,8 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
         
         inchis_test = Y_C_test.getCandidateSet (1, false, 'id');
         
-        result_test = table (inchis_test', scores_test{1}', 'VariableNames', {'inchi', 'score'});
+        result_test = table (inchis_test', scores_test{1}' + abs (min (scores_test{1})), ... 
+            'VariableNames', {'inchi', 'score'});
         writetable (result_test, sprintf ('%s/mpiokr-4-%03d.txt', output_dir, challenge_idx), ...
             'Delimiter', '\t', 'WriteVariableNames', false);
     end % for

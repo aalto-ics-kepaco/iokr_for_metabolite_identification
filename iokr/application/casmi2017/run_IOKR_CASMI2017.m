@@ -19,10 +19,10 @@ function run_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, par
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-%         {'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});
+   % param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+     %   {'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});
 %     
-%     param.iokr_param.model_representation = 'Chol_decomp_of_C';
+   % param.iokr_param.model_representation = 'Chol_decomp_of_C';
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
@@ -32,24 +32,25 @@ function run_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, par
     
     % Extract fingerprints
     Y_train = full (dt_inchi_mf_fp.fp_masked)';
-%     param.ky_param.representation  = 'feature';
-%     param.ky_param.type            = 'linear';
-%     param.ky_param.base_kernel     = 'linear';
-%     param.ky_param.param_selection = 'cv';
+    %param.ky_param.representation  = 'feature';
+    %param.ky_param.type            = 'linear';
+    %param.ky_param.base_kernel     = 'linear';
+    %param.ky_param.param_selection = 'cv';
     
     % Input kernels
     kernel_files = dir ([input_dir_training '/kernels/*.mat']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_param.inputKernel = 'unimkl';
+    %param.data_param.availInputKernels = param.data_param.availInputKernels(1:2);
+    param.data_param.inputKernel = param.iokr_param.mkl;
     KX_list_train = loadInputKernelsIntoList ([input_dir_training, '/kernels/'], param, '.mat');
     
     %--------------------------------------------------------------
     % Train the model using all the training data
     %--------------------------------------------------------------
     train_model = Train_IOKR (KX_list_train, Y_train, ...
-            param.ky_param, param.iokr_param, param.opt_param);
-%     save ([input_dir_training, '/train_model.mat'], 'train_model', '-v7.3');
+            param.ky_param, param.opt_param, param.iokr_param);
+%    save ([input_dir_training, '/train_model.mat'], 'train_model', '-v7.3');
     
     filename = [input_dir_training, '/train_model_iokr_mkl=', param.iokr_param.mkl, ...
        '_kernel=', param.ky_param.type, ...
@@ -112,7 +113,7 @@ function run_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, par
         
         result_test = table (inchis_test', scores_test{1}' + abs (min (scores_test{1})), ... 
             'VariableNames', {'inchi', 'score'});
-        writetable (result_test, sprintf ('%s/mpiokr-4-%03d.txt', output_dir, challenge_idx), ...
+        writetable (result_test, sprintf ('%s/iokr-4-%03d.txt', output_dir, challenge_idx), ...
             'Delimiter', '\t', 'WriteVariableNames', false);
     end % for
 end

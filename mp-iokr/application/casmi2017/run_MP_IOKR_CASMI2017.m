@@ -1,4 +1,4 @@
-function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, cand)
+function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, param)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -19,8 +19,8 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-    param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
+    %param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+    %    {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
       
 %     param.opt_param.nInnerFolds = 2;
     
@@ -29,25 +29,28 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     %--------------------------------------------------------------
 
     % inchi keys, molecular formulas, fingerprints
-    load ([input_dir_training '/compound_info.mat'], 'dt_inchi_mf_fp');
+    load ([input_dir_training '/compounds/compound_info.mat'], 'dt_inchi_mf_fp');
     inchi = dt_inchi_mf_fp.inchi_key_1; 
     
     % Extract fingerprints
     Y_train = full (dt_inchi_mf_fp.fp_masked)';
-    param.ky_param.representation  = 'feature';
-    param.ky_param.type            = 'linear';
-    param.ky_param.base_kernel     = 'linear';
-    param.ky_param.param_selection = 'cv';
+    %param.ky_param.representation  = 'feature';
+    %param.ky_param.type            = 'linear';
+    %param.ky_param.base_kernel     = 'linear';
+    %param.ky_param.param_selection = 'cv';
 
     % Candidates description
+    tic;
+    load ([input_dir_training, '/candidates/cand_prepared.mat'], 'cand');
+    toc;
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
     Y_C_train = CandidateSets (DataHandle (cand), mf_corres);  
     assert (Y_C_train.getNumberOfExamples() == size (Y_train, 2))
     
     % Candidate selection
     % TODO: WE USE ALL THE CANDIDATES FOR THE MOMENT
-    param.data_param.selection_param = struct ( ...
-        'strategy', 'random', 'perc', 5, 'inclExpCand', false);
+   % param.data_param.selection_param = struct ( ...
+   %     'strategy', 'random', 'perc', 5, 'inclExpCand', false);
     selec = getCandidateSelection (Y_C_train, inchi, param.data_param.selection_param);      
     Y_C_train.setSelectionsOfCandidateSets (selec);
     
@@ -55,7 +58,7 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     kernel_files = dir ([input_dir_training '/kernels/*.mat']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_param.inputKernel = 'unimkl';
+    param.data_param.inputKernel = param.mp_iokr_param.mkl;
     KX_list_train = loadInputKernelsIntoList ([input_dir_training, '/kernels/'], param, '.mat');
     
     %--------------------------------------------------------------

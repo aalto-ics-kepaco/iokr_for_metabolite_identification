@@ -41,10 +41,14 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
     param.ky_param.representation  = 'kernel';
-    param.ky_param.type            = 'tanimoto';
-    param.ky_param.base_kernel     = 'gaussian';
+    param.ky_param.type            = 'gaussian';
+    param.ky_param.base_kernel     = 'tanimoto';
     param.ky_param.param_selection = 'entropy';
-   
+%     param.ky_param.representation  = 'feature';
+%     param.ky_param.type            = 'linear';
+%     param.ky_param.base_kernel     = 'linear';
+%     param.ky_param.param_selection = 'cv';
+
     % Cross-validation
     cv = getCVIndices (struct ('nObservations', n, ...
         'outer', struct ('type', 'random', 'nFolds', n_folds)));
@@ -54,10 +58,10 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     Y_C       = CandidateSets (DataHandle (cand), mf_corres);
     assert (Y_C.getNumberOfExamples() == size (Y, 2))
     % Candidate selection
-%     param.data_param.selection_param = struct ( ...
-%         'strategy', 'random', 'perc', 1, 'inclExpCand', false);
     param.data_param.selection_param = struct ( ...
-        'strategy', 'maxElement', 'maxNumCand', 10, 'inclExpCand', false);
+        'strategy', 'random', 'perc', 1, 'inclExpCand', false);
+%     param.data_param.selection_param = struct ( ...
+%         'strategy', 'maxElement', 'maxNumCand', 10, 'inclExpCand', false);
     selec = getCandidateSelection (Y_C, inchi, ...
        param.data_param.selection_param);      
     Y_C.setSelectionsOfCandidateSets (selec);
@@ -66,7 +70,7 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     kernel_files = dir ([inputDir '/kernels/*.txt']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_param.inputKernel = 'unimkl';
+    param.data_param.inputKernel = param.mp_iokr_param.mkl;
     KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'], param, '.txt');
     
     %--------------------------------------------------------------

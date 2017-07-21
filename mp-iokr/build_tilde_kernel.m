@@ -33,17 +33,18 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     
     % Build the V and D matrices
     V = zeros (n_C, n);
-    D = zeros (n_C, n_C);
+%     D = zeros (n_C, n_C);
     ind_0 = 0;
     for i = 1:n
         ind_i = ind_0+(1:n_Ci(i));
 %         V(ind_i,i) = 1/n_Ci(i);
         V(ind_i,i) = 1;
-        D(ind_i,ind_i) = 1/sqrt(n_Ci(i));
+%         D(ind_i,ind_i) = 1/sqrt(n_Ci(i));
         ind_0 = ind_0+n_Ci(i);
     end
     V = sparse (V);
-    D = sparse (D);
+%     D = sparse (D);
+    D = sparse (diag (rude (n_Ci, 1 ./ sqrt (n_Ci))));
     
     ind_S = 1:n;
     ind_C = n + (1:n_C);
@@ -77,24 +78,24 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     I_minus_D_squaredVVt_D = (sparse (1:n_C, 1:n_C, 1) - D_squaredVVt)*D;
 %     toc;
     
-%     tic;
+% 
+%     KY_tilde = normmat (KY_tilde);    tic;
     KY_tilde(ind_S,ind_S) = KY(ind_S,ind_S) - VtD_squaredK_CS - ...
         VtD_squaredK_CS' + VtD_squaredK_CC*VtD_squared';
-%     clear VtD_squaredK_CS VtD_squared;
+    clear VtD_squaredK_CS VtD_squared;
 %     toc;
 %     tic;
     KY_tilde(ind_S,ind_C) = (KY(ind_S,ind_C) - VtD_squaredK_CC) * I_minus_D_squaredVVt_D;
-%     clear VtD_squaredK_CC;
+    clear VtD_squaredK_CC;
 %     toc;
 %     tic;
     KY_tilde(ind_C,ind_S) = KY_tilde(ind_S,ind_C)';
 %     toc;
 %     tic;
     KY_tilde(ind_C,ind_C) = I_minus_D_squaredVVt_D'*KY(ind_C,ind_C)*I_minus_D_squaredVVt_D;
-%     clear VVt D_squared D_squaredVVt I_minus_D_squaredVVt_D;
+    clear VVt D_squared D_squaredVVt I_minus_D_squaredVVt_D;
 %     toc;
 
-%     KY_tilde = normmat (KY_tilde);
     
     if (debug_param.verbose)
         fprintf ('build_tilde_kernel (n = %d, n_C = %d): %.3fs\n', n, n_C, toc);

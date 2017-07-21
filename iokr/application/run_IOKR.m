@@ -26,10 +26,19 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
     rng (param.debug_param.randomSeed);
     
     n_folds = param.opt_param.nOuterFolds;
+    param.opt_param.nInnerFolds = 10;
    
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
+    param.ky_param.representation  = 'kernel';
+    param.ky_param.type            = 'gaussian';
+    param.ky_param.base_kernel     = 'tanimoto';
+    param.ky_param.param_selection = 'entropy';
+%     param.ky_param.representation  = 'feature';
+%     param.ky_param.type            = 'linear';
+%     param.ky_param.base_kernel     = 'linear';
+%     param.ky_param.param_selection = 'cv';
 
     % inchi keys, molecular formulas, fingerprints
     load ([inputDir '/compound_info.mat'], 'dt_inchi_mf_fp');
@@ -59,6 +68,8 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
     % Run Cross-validation
     %--------------------------------------------------------------
     rank = NaN (n, 1);
+    cand_num = arrayfun (@(id) Y_C.getCandidateSet (id, false, 'num'), ...
+        1:Y_C.getNumberOfExamples());
     for i = 1:n_folds
         disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
 
@@ -83,11 +94,15 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
 
         % Computation of the ranks
         rank(test_set) = getRanksBasedOnScores (Y_C_test, inchi(test_set), scores);
+        
+        if (param.debug_param.verbose)
+            rank_perc     = getRankPerc (rank, cand_num);
+            rank_perc_100 = rank_perc(1:100);
+            disp (round (rank_perc_100([1, 5, 10, 20]), 3));
+        end % if
     end
 
     % Computation of the percentage of identified metabolites in the top k
-    cand_num      = arrayfun (@(id) Y_C.getCandidateSet (id, false, 'num'), ...
-        1:Y_C.getNumberOfExamples());
     rank_perc     = getRankPerc (rank, cand_num);
     rank_perc_100 = rank_perc(1:100);
 

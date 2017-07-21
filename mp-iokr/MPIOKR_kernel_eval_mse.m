@@ -97,7 +97,7 @@ function [ mse ] = MPIOKR_kernel_eval_mse( KX_list, Y, Y_C, KY_par, gamma_opt, .
         KX_train_test_tilde = [KX_train_test - KX_train*M_train_test*D_test^2*V_test, ...
                                KX_train*M_train_test*(eye(n_test_C) - D_test^2*(V_test*V_test'))*D_test];
                            
-        fprintf ('Mean diag KY_tilde: %.f\n', mean (diag (KY_tilde)));
+%         fprintf ('Mean diag KY_tilde: %f\n', mean (diag (KY_tilde)));
         % mean (diag (KX_train_test_tilde)); 
                                    
         Ic = cell(n_kx,1);
@@ -115,9 +115,9 @@ function [ mse ] = MPIOKR_kernel_eval_mse( KX_list, Y, Y_C, KY_par, gamma_opt, .
         for il = 1:length(val_lambda)
             lambda = val_lambda(il);
             
-            if (debug_param.verbose)
-                fprintf ('Lambda: %e\n', lambda);
-            end % if
+%             if (debug_param.verbose)
+%                 fprintf ('Lambda: %e\n', lambda);
+%             end % if
 
             % Training
             C = (lambda * eye(n_kx*n_train) + KX_train * AAt);

@@ -51,16 +51,17 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
         
         % Build the V and D matrices
         V = zeros(n_C_train, n_train);
-        D = zeros(n_C_train, n_C_train);
+%         D = zeros(n_C_train, n_C_train);
         ind_0 = 0;
         for i = 1:n_train
             ind_i = ind_0+(1:n_Ci(i));
             V(ind_i,i) = 1;
-            D(ind_i,ind_i) = 1/sqrt(n_Ci(i));
+%             D(ind_i,ind_i) = 1/sqrt(n_Ci(i));
             ind_0 = ind_0+n_Ci(i);
         end
         V = sparse (V);
-        D = sparse (D);
+%         D = sparse (D);
+        D = sparse (diag (rude (n_Ci, 1 ./ sqrt (n_Ci))));
         
         D_squared              = D^2;
         D_I_minus_D_squaredVVt = D *(sparse (1:n_C_train, 1:n_C_train, 1)-D_squared*(V*V'))';
@@ -74,7 +75,7 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
         clear KY_all_S KY_S;
         
         KY_all_diag_c = center (KY_all_diag, mean_KY_S, ker_center, ...
-            mean_KY_all_S, mean_KY_all_S');
+            mean_KY_all_S, mean_KY_all_S', true);
         clear KY_all_diag;
         
         if (debug_param.verbose)
@@ -108,7 +109,7 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
                 % Centering  
 
                 KY_Cj_diag_c  = center (KY_Cj_diag, mean_KY_S, ker_center, ...
-                    mean (KY_all_Cj(ind_S, :), 1)' , mean (KY_all_Cj(ind_S, :), 1));
+                    mean (KY_all_Cj(ind_S, :), 1)' , mean (KY_all_Cj(ind_S, :), 1), true);
                 
                 KY_all_Cj_c = center (KY_all_Cj, mean_KY_S, ker_center, ...
                     mean_KY_all_S, mean (KY_all_Cj(ind_S, :), 1));

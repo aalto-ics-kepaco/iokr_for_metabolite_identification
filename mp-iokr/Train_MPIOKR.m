@@ -41,10 +41,10 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     KX_train = blkdiag (KX_train{:});
     
     % Output processing
-    if strcmp(ky_param.type,'linear')
+    if strcmp(KY_par_opt.type,'linear')
         [Psi_train, process_output] = output_feature_preprocessing_train(Y_train, mp_iokr_param.center);
     else
-        [KY_train, process_output] = output_kernel_preprocessing_train(Y_train, ky_param, mp_iokr_param.center);
+        [KY_train, process_output] = output_kernel_preprocessing_train(Y_train, KY_par_opt, mp_iokr_param.center);
     end
     
     % Computation of the matrices M and I
@@ -67,7 +67,7 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     clear Ic;
     
     % Training
-    if strcmp(ky_param.type,'linear')
+    if strcmp(KY_par_opt.type,'linear')
         [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, process_output.mean, mp_iokr_param.center, debug_param.verbose);
         
         A1 = I - M * Mean_Psi_C_train;

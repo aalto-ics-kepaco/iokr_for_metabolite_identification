@@ -202,6 +202,7 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
         Y_C_train     = Y_C.getSubset (data_param_fold.train_set);
         trained_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
             param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
+        clear KX_list_train;
         
         % Scoring
         KX_list_train_test = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.test_set), ...

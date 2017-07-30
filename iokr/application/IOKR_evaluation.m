@@ -1,4 +1,4 @@
-function IOKR_feat_evaluation (inputDir, outputDir, param)
+function IOKR_evaluation (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 
@@ -148,7 +148,6 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
     param.data_param.cv       = getCVIndices (param.data_param.cv_param);
         
     ranks = NaN (Y_C.getNumberOfExamples(), 1);
-    debug_info = struct('lambda_opt', [], 'err', []);
 
     for foldIdx = 1:param.data_param.cv.outer.NumTestSets
         fprintf ('Outer fold: %d/%d\n', foldIdx, param.data_param.cv.outer.NumTestSets);
@@ -159,9 +158,23 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
         
         % Calculate the scores for each candidate corresponding the current
         % test-examples
-        Y_C_test = Y_C.getSubset (data_param_fold.test_set);
-        [scores_test, debug_info(foldIdx)] = IOKR_feat (KX_list, Y(:, data_param_fold.train_set), Y_C_test, ...
-            param.opt_param, param.iokr_param, data_param_fold, param.debug_param);
+        % Training
+        KX_list_train = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.train_set), ...
+            KX_list, 'UniformOutput', false);
+        Y_train       = Y(:, data_param_fold.train_set);
+        
+        trained_model = Train_IOKR (KX_list_train, Y_train, ...
+            param.ky_param, param.opt_param, param.iokr_param);
+        
+        % Scoring
+        KX_list_train_test = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.test_set), ...
+            KX_list, 'UniformOutput', false);
+        KX_list_test       = cellfun(@(x) x(data_param_fold.test_set, data_param_fold.test_set),  ...
+            KX_list, 'UniformOutput', false);
+        Y_C_test           = Y_C.getSubset (data_param_fold.test_set);
+        
+        [scores_test, ~] = Test_IOKR (KX_list_train_test, KX_list_test, ...
+            trained_model, Y_train, Y_C_test, param.iokr_param.center);
         assert (numel (scores_test) == numel (find (data_param_fold.test_set)), ...
             'There must be a score for each test-examples.');
         
@@ -186,13 +199,14 @@ function IOKR_feat_evaluation (inputDir, outputDir, param)
     % FIXME: The hash-values should be associated with a certain setting
     % using some database.
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
-        'debug_info', debug_info, 'opt_param', param.opt_param); %#ok<NASGU>
+        'param', param); %#ok<NASGU>
     
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...
         'input_kernel',    upper(param.data_param.inputKernel), ...
         'center',          param.iokr_param.center,             ...
-        'cv_type',         param.iokr_param.cv_type));
+        'cv_type',         param.iokr_param.cv_type,            ...
+        'ky_param',        param.ky_param));
     save (strcat (outputDir, '/', settingHash, '.mat'), 'result', '-v7.3');
     
     disp (rankPerc([1, 5, 10, 20]));

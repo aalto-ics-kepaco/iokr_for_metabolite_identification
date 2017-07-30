@@ -1,4 +1,4 @@
-function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
+function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -19,8 +19,8 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-    param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
+%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+%         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
     
     param.debug_param.randomSeed = 10;
     rng (param.debug_param.randomSeed);
@@ -40,10 +40,10 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
     % Extract fingerprints
     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
-    param.ky_param.representation  = 'kernel';
-    param.ky_param.type            = 'gaussian';
-    param.ky_param.base_kernel     = 'tanimoto';
-    param.ky_param.param_selection = 'entropy';
+%     param.ky_param.representation  = 'kernel';
+%     param.ky_param.type            = 'gaussian';
+%     param.ky_param.base_kernel     = 'tanimoto';
+%     param.ky_param.param_selection = 'entropy';
 %     param.ky_param.representation  = 'feature';
 %     param.ky_param.type            = 'linear';
 %     param.ky_param.base_kernel     = 'linear';
@@ -123,6 +123,6 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
         '_base=', param.ky_param.base_kernel, ...
         '_', param.ky_param.param_selection, ...
         '_strategy=', param.data_param.selection_param.strategy, ...
-        '_inclCandExp', num2str(param.data_param.selection_param.inclCandExp)];
+        '_inclCandExp', num2str(param.data_param.selection_param.inclExpCand)];
     save(filename,'rank_perc_100','-ascii');
 end

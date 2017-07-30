@@ -192,6 +192,11 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         
         % Calculate the scores for each candidate corresponding the current
         % test-examples
+        % Training
+        Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ky_param, mp_iokr_param, opt_param, debug_param )
+        
+        % Scoring
+        
         [scores_test, debug_info(foldIdx)] = MP_IOKR_reverse_feat (KX_list, Y(:, data_param_fold.train_set), Y_C, ...
             param.opt_param, param.mp_iokr_param, data_param_fold, param.debug_param);
         assert (numel (scores_test) == numel (find (data_param_fold.test_set)), ...
@@ -222,7 +227,7 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
         'cand_num_sel', candNumSel, 'debug_info', debug_info, 'opt_param', param.opt_param, ...
-        'selection_param', param.data_param.selection_param); %#ok<NASGU>
+        'selection_param', param.data_param.selection_param, 'param', param); %#ok<NASGU>
     
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...

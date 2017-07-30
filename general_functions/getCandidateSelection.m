@@ -160,7 +160,7 @@ function [selec, debugVec] = getCandidateSelection (candidateSets, id, param, ..
                 numCand      = 0;
                 
                 for idx = 1:numExamples
-                    numCandForExamples = candidateSets.getCandidateSet (idx, 0, 'num');
+                    numCandForExamples = candidateSets.getCandidateSet (idx, false, 'num');
                     if (isnan (numCandForExamples))
                         % There is no candidate set
                         selec{idx} = NaN;

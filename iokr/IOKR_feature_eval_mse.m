@@ -1,4 +1,4 @@
-function [ mse ] = IOKR_feature_eval_mse( KX_train, Psi_train, select_param )
+function [ mse ] = IOKR_feature_eval_mse( KX_train, Psi_train, opt_param )
 %======================================================
 % DESCRIPTION:
 % Computation of the mean squared errors (mse) for different values of the 
@@ -16,15 +16,15 @@ function [ mse ] = IOKR_feature_eval_mse( KX_train, Psi_train, select_param )
 %====================================================== 
 
     % Vector containing the possible values for the regularization parameter
-    val_lambda = select_param.lambda;
+    val_lambda = opt_param.val_lambda;
 
-    switch select_param.cv_type
+    switch opt_param.cv_type
         
         % Parameter selection using inner cross-validation
         case 'cv'
         
-            c = select_param.cv_partition; % CV partition
-            n_folds = select_param.num_folds; % number of folds
+            c = opt_param.cv_partition; % CV partition
+            n_folds = opt_param.num_folds; % number of folds
 
             mse_cv = zeros(length(val_lambda), n_folds);
 

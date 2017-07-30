@@ -61,7 +61,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
         sw_train_MP_IOKR_reverse_feat      = StopWatch ('Train_MP_IOKR_reverse_feat');
         sw_prediction_MP_IOKR_reverse_feat = StopWatch ('Prediction_MP_IOKR_reverse_feat');
         sw_preimage_MP_IOKR_feat           = StopWatch ('Preimage_MP_IOKR_feat');
-        sw_select_param_reverse_IOKR  = StopWatch ('Select_param_reverse_IOKR (gamma)');
+        sw_select_param_reverse_IOKR       = StopWatch ('Select_param_reverse_IOKR (gamma)');
     end % if
 
     train_set = find (data_param.train_set);
@@ -123,7 +123,7 @@ function [ score, debug_info ] = MP_IOKR_reverse_feat(KX_list, Y_train, Y_C, ...
     %% Selection of the regularization parameter(s) of reverse IOKR
     if (debug_param.verbose) ; sw_select_param_reverse_IOKR.start() ; end % if
     
-    gamma_opt = Select_param_reverse_IOKR(KX_train_list, Psi_train, opt_param.val_gamma);
+    gamma_opt = Select_param_reverse_IOKR(KX_train_list, Psi_train, opt_param);
     
     if (debug_param.verbose) 
         sw_select_param_reverse_IOKR.stop();

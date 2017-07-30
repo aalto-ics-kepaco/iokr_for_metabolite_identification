@@ -1,4 +1,4 @@
-function [ vec_gamma_opt ] = Select_param_reverse_IOKR( KX_train_list, Psi_train, val_gamma )
+function [ vec_gamma_opt ] = Select_param_reverse_IOKR( KX_train_list, Psi_train, opt_param )
 %======================================================
 % DESCRIPTION:
 % Selection of the regularization parameters for the reverse IOKR approach 
@@ -22,11 +22,11 @@ function [ vec_gamma_opt ] = Select_param_reverse_IOKR( KX_train_list, Psi_train
     vec_gamma_opt = zeros(n_kx,1);
     for i = 1:n_kx
         
-        select_param = struct('lambda', val_gamma, 'cv_type', 'loocv');
-        mse = IOKR_kernel_eval_mse(Psi_train'*Psi_train, KX_train_list{i}, select_param);
+        mse = IOKR_kernel_eval_mse(Psi_train'*Psi_train, KX_train_list{i}, ...
+            struct('val_lambda', opt_param.val_gamma, 'cv_type', 'loocv'));
         
         [~,ind_gamma_opt] = min(mse);
-        vec_gamma_opt(i) = val_gamma(ind_gamma_opt);      
+        vec_gamma_opt(i) = opt_param.val_gamma(ind_gamma_opt);      
     end
 end
 

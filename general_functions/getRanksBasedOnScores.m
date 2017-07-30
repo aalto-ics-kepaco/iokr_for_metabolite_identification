@@ -4,6 +4,9 @@ function ranks = getRanksBasedOnScores (Y_C, inchis, scores, eval_set)
 %    certain test-example. The canidates are sorted according to their
 %    score. Subsequently the test-example is searched in the set of sorted
 %    candidates. The position at which it is found is it's rank.
+    if (nargin < 4)
+        eval_set = true (Y_C.getNumberOfExamples(), 1);
+    end % if
 
     ranks = NaN (Y_C.getNumberOfExamples(), 1);
 
@@ -24,11 +27,10 @@ function ranks = getRanksBasedOnScores (Y_C, inchis, scores, eval_set)
 
         % Get the inchis of all the candidate in the set for test
         % example j
-        inchis_c = Y_C.getCandidateSet (j, 0, 'id');
-        ind = find (strcmp (inchis_c(IX), inchis(j)));
-        assert (~ isempty (ind), ...
-            'The inchi of the example itself is not in the candidate set. We only evaluate using the eval-set.');
-
+        inchis_c = Y_C.getCandidateSet (j, false, 'id');
+        assert (any (Y_C.findExampleInCandidateSet (j, inchis{j})), ...
+            'True candidate is not in the candidate set.');
+        
         ranks(j) = find (strcmp (inchis_c(IX), inchis{j}));
     end % for
 end % function

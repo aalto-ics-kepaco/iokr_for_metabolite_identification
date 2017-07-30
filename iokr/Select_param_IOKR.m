@@ -1,4 +1,4 @@
-function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y_train, output_param, select_param, iokr_param )
+function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y_train, ky_param, opt_param, iokr_param )
 %======================================================
 % DESCRIPTION:
 % Selection of the regularization parameter in IOKR in the case of a kernel represention in output
@@ -19,16 +19,16 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
 %======================================================    
 
     % Possible values for the regularization parameter
-    val_lambda = select_param.lambda;
+    val_lambda = opt_param.val_lambda;
     
-    if strcmp(select_param.cv_type,'cv') && ~isfield(select_param,'cv_partition')
+    if strcmp(opt_param.cv_type,'cv') && ~isfield(opt_param,'cv_partition')
         % Create cross-validation partition if it is missing
-        n_folds = select_param.num_folds;
-        select_param.cv_partition = cvpartition(size(Y_train,2), 'k', n_folds);
-        select_param.num_folds = n_folds;
+        n_folds = opt_param.num_folds;
+        opt_param.cv_partition = cvpartition(size(Y_train,2), 'k', n_folds);
+        opt_param.num_folds = n_folds;
     end
     
-    switch output_param.representation
+    switch ky_param.representation
         case 'feature'
                         
             % Multiple kernel learning
@@ -37,13 +37,13 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
             w = mkl_weight(iokr_param.mkl, KX_list_train, normmat(KY_train));
             
             % Input kernels processing and combination
-            KX_train = input_kernel_preprocessing_train(KX_list_train, w, iokr_param);
+            KX_train = input_kernel_preprocessing_train(KX_list_train, w, iokr_param.center);
             
             % Output feature vectors processing
             Psi_train = output_feature_preprocessing_train(Y_train, iokr_param.center);
             
             % Computation of the MSE for the different regularization parameters
-            mse = IOKR_feature_eval_mse(KX_train, Psi_train, select_param);
+            mse = IOKR_feature_eval_mse(KX_train, Psi_train, opt_param);
             
             % Parameter selection
             [~, ind_lambda_opt] = min(mse);
@@ -52,9 +52,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
             KY_par_opt = KY_par;
             
         case 'kernel'
-            
-            ky_param = output_param.kernel_param;
-
+        
             % If the param_selection field is set to 'entropy', we use the gamma parameter 
             % that maximizes the entropy of the kernel (can only used with Gaussian kernels)
             if isfield(ky_param,'param_selection') && strcmp(ky_param.param_selection,'entropy')
@@ -79,7 +77,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
                 KY_train = output_kernel_preprocessing_train(Y_train, ky_param_all_comb(ip), iokr_param.center);
 
                 % Computation of the MSE for the different regularization parameters
-                mse(ip,:) = IOKR_kernel_eval_mse(KX_train, KY_train, select_param);
+                mse(ip,:) = IOKR_kernel_eval_mse(KX_train, KY_train, opt_param);
             end
 
             % Parameter selection

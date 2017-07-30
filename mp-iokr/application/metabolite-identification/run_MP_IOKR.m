@@ -1,4 +1,4 @@
-function [ ] = run_MP_IOKR( inputDir, outputDir, cand )
+function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -16,12 +16,21 @@ function [ ] = run_MP_IOKR( inputDir, outputDir, cand )
 %
 %======================================================
 
-    % We fix the random seed to be able to compare the results directly
-    % with mp-iokr.
-    rng (10);
-
     %--------------------------------------------------------------
-    % Load Data
+    % Set up parameters
+    %--------------------------------------------------------------
+%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+%         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
+    
+    param.debug_param.randomSeed = 10;
+    rng (param.debug_param.randomSeed);
+    
+    n_folds = param.opt_param.nOuterFolds;
+    param.opt_param.nInnerFolds = 10;
+%     param.opt_param.val_lambda = [param.opt_param.val_lambda, 1000, 10000, 100000];
+   
+    %--------------------------------------------------------------
+    % Load and prepare data
     %--------------------------------------------------------------
 
     % inchi keys, molecular formulas, fingerprints
@@ -31,70 +40,76 @@ function [ ] = run_MP_IOKR( inputDir, outputDir, cand )
     % Extract fingerprints
     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
+%     param.ky_param.representation  = 'kernel';
+%     param.ky_param.type            = 'gaussian';
+%     param.ky_param.base_kernel     = 'tanimoto';
+%     param.ky_param.param_selection = 'entropy';
+%     param.ky_param.representation  = 'feature';
+%     param.ky_param.type            = 'linear';
+%     param.ky_param.base_kernel     = 'linear';
+%     param.ky_param.param_selection = 'cv';
 
-    % Candidates description
-    mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
-   
-    % Input kernels
-    kernel_files = dir ([inputDir '/kernels/*.txt']);
-    KX_list = arrayfun (@(file) loadKernel ([inputDir '/' file.name]), kernel_files, ...
-        'UniformOutput', false);
-    
-    % Parameters
-    iokr_param = struct('center',1,'mkl','unimkl','model_representation','only_C');
-    select_param = struct( ...
-        'cv_type','loocv', ...
-        'lambda', [1e-5 1e-4 1e-3 1e-2 5e-2 1e-1 5e-1 1 10 100]);
-%     ky_param = struct( ...
-%         'type','gaussian', ...
-%         'base_kernel','tanimoto',...
-%         'param_selection','entropy');
-    ky_param = struct ('type', 'linear', 'base_kernel', 'linear', 'param_selection', 'cv');
-    output_param = struct('representation','kernel','kernel_param',ky_param);
-
-    %--------------------------------------------------------------
     % Cross-validation
-    %--------------------------------------------------------------
-
-    rank = NaN(n,1);
-    cand_num = zeros(n,1); % vector containing the number of candidates for each test example
-
-    n_folds = 10; % number of folds
     cv = getCVIndices (struct ('nObservations', n, ...
         'outer', struct ('type', 'random', 'nFolds', n_folds)));
 
+    % Candidates description
+    mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
+    Y_C       = CandidateSets (DataHandle (cand), mf_corres);
+    assert (Y_C.getNumberOfExamples() == size (Y, 2))
+    % Candidate selection
+    param.data_param.selection_param = struct ( ...
+        'strategy', 'random', 'perc', 1, 'inclExpCand', false);
+%     param.data_param.selection_param = struct ( ...
+%         'strategy', 'maxElement', 'maxNumCand', 10, 'inclExpCand', false);
+    selec = getCandidateSelection (Y_C, inchi, ...
+       param.data_param.selection_param);      
+    Y_C.setSelectionsOfCandidateSets (selec);
+    
+    % Input kernels
+    kernel_files = dir ([inputDir '/kernels/*.txt']);
+    param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
+        kernel_files, 'UniformOutput', false);
+    param.data_param.inputKernel = param.mp_iokr_param.mkl;
+    KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'], param, '.txt');
+    
+    %--------------------------------------------------------------
+    % Run Cross-validation
+    %--------------------------------------------------------------
+    rank     = NaN (n, 1);
+    cand_num = arrayfun (@(id) Y_C.getCandidateSet (id, false, 'num'), ...
+        1:Y_C.getNumberOfExamples());
     for i = 1:n_folds
         disp(['Now starting iteration ', int2str(i), ' out of ', int2str(n_folds)])
 
         % Create training and test sets
         test_set  = find (test_my (cv.outer, i));
-        train_set = setdiff(1:n,test_set);
+        train_set = setdiff (1:n, test_set);
         
         % Training
-        KX_list_train = cellfun(@(x) x(train_set,train_set), KX_list, 'UniformOutput', false);
-        Y_train = Y(:,train_set);
+        KX_list_train = cellfun(@(x) x(train_set, train_set), KX_list, 'UniformOutput', false);
+        Y_train       = Y(:, train_set);
+        Y_C_train     = Y_C.getSubset (train_set);
 
-        train_model = Train_IOKR(KX_list_train, Y_train, output_param, ...
-            select_param, iokr_param);
+        train_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
+            param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
 
         % Prediction and scoring
         KX_list_train_test = cellfun(@(x) x(train_set,test_set), KX_list, 'UniformOutput', false);
-        KX_list_test = cellfun(@(x) x(test_set,test_set), KX_list, 'UniformOutput', false);
-        Y_C_test = arrayfun(@(x) x.data, cand(mf_corres(test_set)),'UniformOutput',false);
+        KX_list_test       = cellfun(@(x) x(test_set,test_set),  KX_list, 'UniformOutput', false);
+        Y_C_test           = Y_C.getSubset (test_set);
 
-        score = Test_IOKR(KX_list_train_test, KX_list_test, train_model, ...
-            Y_train, Y_C_test, iokr_param.center);
+        scores = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model, ...
+            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param, param.mp_iokr_param.center, param.debug_param);
 
         % Computation of the ranks
-        for j = 1:length(test_set)
-            k = test_set(j);
-
-            inchi_c = cand(mf_corres(k)).id;
-            [~,IX] = sort(score{j},'descend');
-            
-            rank(k) = find(strcmp(inchi_c(IX), inchi{k}));
-            cand_num(k) = length(score{j});
-        end
+        rank(test_set) = getRanksBasedOnScores (Y_C_test, inchi(test_set), scores);
+        
+        if (param.debug_param.verbose)
+            rank_perc     = getRankPerc (rank, cand_num);
+            rank_perc_100 = rank_perc(1:100);
+            disp (round (rank_perc_100([1, 5, 10, 20]), 3));
+        end % if
     end
 
     % Computation of the percentage of identified metabolites in the top k
@@ -103,10 +118,11 @@ function [ ] = run_MP_IOKR( inputDir, outputDir, cand )
 
     disp (round (rank_perc_100([1, 5, 10, 20]), 3));
 
-    filename = [outputDir, 'rank_mkl=' iokr_param.mkl ...
-        '_kernel=' ky_param.type ...
-        '_base=' ky_param.base_kernel '_' ky_param.param_selection ...
-        '_model_representation=', iokr_param.model_representation];
+    filename = [outputDir, '/mpiokr/', 'rank_mkl=', param.mp_iokr_param.mkl, ...
+        '_kernel=', param.ky_param.type, ...
+        '_base=', param.ky_param.base_kernel, ...
+        '_', param.ky_param.param_selection, ...
+        '_strategy=', param.data_param.selection_param.strategy, ...
+        '_inclCandExp', num2str(param.data_param.selection_param.inclExpCand)];
     save(filename,'rank_perc_100','-ascii');
-    
 end

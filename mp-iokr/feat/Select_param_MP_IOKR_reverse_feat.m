@@ -59,10 +59,10 @@ function [ lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( ...
     % cross-validation experiment
     if (data_param.usePreCalcStat)
         n_folds = data_param.cv.NumTestSets;
-        c = data_param.cv;
+        cv = data_param.cv;
     else
         n_folds = opt_param.nInnerFolds;
-        c = cvpartition(n_train, 'k', n_folds);
+        cv = cvpartition(n_train, 'k', n_folds);
     end % if
             
     mp_err = zeros(length(opt_param.val_lambda), n_folds);
@@ -74,15 +74,15 @@ function [ lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( ...
         % Defining training and test sets       
         % Insert some assertions to prevent problems with pre-calulated
         % data. Can be removed later.
-        assert (numel (training_my(c,foldIdx)) == size (KX_train_list{1}, 1), ...
+        assert (numel (training_my(cv,foldIdx)) == size (KX_train_list{1}, 1), ...
             'Upps?!: Lenght of the binary training selection vector should match the dimension of the kernel. usePreCalcStat = %d', ...
             data_param.usePreCalcStat);
-        assert (numel (test_my(c,foldIdx)) == size (KX_train_list{1}, 1), ...
+        assert (numel (test_my(cv,foldIdx)) == size (KX_train_list{1}, 1), ...
             'Upps?!: Lenght of the binary test selection vector should match the dimension of the kernel. usePreCalcStat = %d', ...
             data_param.usePreCalcStat);
         
-        train_set_cv = find(training_my(c,foldIdx));        
-        test_set_cv = find(test_my(c,foldIdx));
+        train_set_cv = find(training_my(cv,foldIdx));        
+        test_set_cv = find(test_my(cv,foldIdx));
         
         KX_train_cv_list = cellfun(@(x) x(train_set_cv,train_set_cv), KX_train_list, 'UniformOutput', false);
         KX_train_test_cv_list = cellfun(@(x) x(train_set_cv,test_set_cv), KX_train_list, 'UniformOutput', false);
@@ -112,8 +112,8 @@ function [ lambda_opt, mp_err ] = Select_param_MP_IOKR_reverse_feat( ...
             
             clear stats_cv;
         else
-            assert (Y_C_train.getNumberOfExamples() == numel (training_my(c,foldIdx)), 'Upps?!')
-            assert (Y_C_train.getNumberOfExamples() == numel (test_my(c,foldIdx)), 'Upps?!')
+            assert (Y_C_train.getNumberOfExamples() == numel (training_my(cv,foldIdx)), 'Upps?!')
+            assert (Y_C_train.getNumberOfExamples() == numel (test_my(cv,foldIdx)), 'Upps?!')
             
             Y_C_train_cv = Y_C_train.getSubset (train_set_cv);
             Y_C_test_cv = Y_C_train.getSubset (test_set_cv);

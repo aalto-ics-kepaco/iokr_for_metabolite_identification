@@ -1,4 +1,4 @@
-function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
+function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 
@@ -41,7 +41,11 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     end % if
     
     % Set the defaults values for the parameter in PARAM if needed.
-    param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param'});    
+    param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
+        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});    
+    
+    assert (~ param.data_param.usePreCalcStat, ...
+        'Not yet implemented for the new train and test methods.');
     
     %% Load data 
     % ... input-kernels for the training examples
@@ -178,8 +182,8 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         fprintf ('Outer fold: %d/%d\n', foldIdx, param.data_param.cv.outer.NumTestSets);
               
         data_param_fold = struct();
-        data_param_fold.train_set = training_my (param.data_param.cv.outer, foldIdx);
-        data_param_fold.test_set  = test_my (param.data_param.cv.outer, foldIdx);
+        data_param_fold.train_set      = training_my (param.data_param.cv.outer, foldIdx);
+        data_param_fold.test_set       = test_my (param.data_param.cv.outer, foldIdx);
         data_param_fold.usePreCalcStat = param.data_param.usePreCalcStat;
         
         if (data_param_fold.usePreCalcStat)
@@ -193,17 +197,25 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         % Calculate the scores for each candidate corresponding the current
         % test-examples
         % Training
-        Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ky_param, mp_iokr_param, opt_param, debug_param )
+        KX_list_train = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.train_set), ...
+            KX_list, 'UniformOutput', false);
+        Y_train       = Y(:, data_param_fold.train_set);
+        Y_C_train     = Y_C.getSubset (data_param_fold.train_set);
+        trained_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
+            param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
         
         % Scoring
-        
-        [scores_test, debug_info(foldIdx)] = MP_IOKR_reverse_feat (KX_list, Y(:, data_param_fold.train_set), Y_C, ...
-            param.opt_param, param.mp_iokr_param, data_param_fold, param.debug_param);
+        KX_list_train_test = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.test_set), ...
+            KX_list, 'UniformOutput', false);
+        KX_list_test       = cellfun(@(x) x(data_param_fold.test_set, data_param_fold.test_set),  ...
+            KX_list, 'UniformOutput', false);
+        Y_C_test           = Y_C.getSubset (data_param_fold.test_set);
+        scores_test = Test_MPIOKR (KX_list_train_test, KX_list_test, trained_model, ...
+            Y_train, Y_C_train, Y_C_test, param.mp_iokr_param, param.mp_iokr_param.center, param.debug_param);
         assert (numel (scores_test) == numel (find (data_param_fold.test_set)), ...
             'There must be a score for each test-examples.');
         
         % Computation of the ranks of the test examples
-        Y_C_test      = Y_C.getSubset (data_param_fold.test_set);
         inchis_test   = inchis(data_param_fold.test_set);
         eval_set_test = eval_set(data_param_fold.test_set);
         
@@ -226,8 +238,7 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
     candNumSel = arrayfun (@(idx) Y_C.getCandidateSet (idx, 1, 'num'), 1:Y_C.getNumberOfExamples());
     
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
-        'cand_num_sel', candNumSel, 'debug_info', debug_info, 'opt_param', param.opt_param, ...
-        'selection_param', param.data_param.selection_param, 'param', param); %#ok<NASGU>
+        'cand_num_sel', candNumSel, 'param', param); 
     
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...
@@ -235,7 +246,8 @@ function IOKR_MP_reverse_feat_evaluation (inputDir, outputDir, param)
         'repetition',      param.data_param.repetition,         ...
         'input_kernel',    upper(param.data_param.inputKernel), ...
         'center',          param.mp_iokr_param.center,          ...
-        'rev_iokr',        param.mp_iokr_param.rev_iokr));
+        'rev_iokr',        param.mp_iokr_param.rev_iokr,        ...
+        'ky_param',        param.ky_param));
     save (strcat (outputDir, '/', settingHash, '.mat'), 'result', '-v7.3');
     
     disp (rankPerc([1, 5, 10, 20]));

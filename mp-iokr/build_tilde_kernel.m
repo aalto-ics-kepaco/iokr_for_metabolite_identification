@@ -33,17 +33,13 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     
     % Build the V and D matrices
     V = zeros (n_C, n);
-%     D = zeros (n_C, n_C);
     ind_0 = 0;
     for i = 1:n
         ind_i = ind_0+(1:n_Ci(i));
-%         V(ind_i,i) = 1/n_Ci(i);
         V(ind_i,i) = 1;
-%         D(ind_i,ind_i) = 1/sqrt(n_Ci(i));
         ind_0 = ind_0+n_Ci(i);
     end
     V = sparse (V);
-%     D = sparse (D);
     D = sparse (diag (rude (n_Ci, 1 ./ sqrt (n_Ci))));
     
     ind_S = 1:n;
@@ -51,11 +47,11 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     
     
     % FIXME: Seems that not all candidate sets are logical.
-    Y_C = cell2mat (arrayfun (@(id) double (Y_C.getCandidateSet (id, true, 'data')), ...
+    Y_C_data = cell2mat (arrayfun (@(id) double (Y_C.getCandidateSet (id, true, 'data')), ...
         1:Y_C.getNumberOfExamples(), 'UniformOutput', false));
     
     % Building and processing the output kernel matrix
-    KY1  = build_kernel ([Y, Y_C], [Y, Y_C], KY_par); % O((l + m)^2)
+    KY1  = build_kernel ([Y, Y_C_data], [Y, Y_C_data], KY_par); % O((l + m)^2)
     KY_c = center (full (KY1), mean(KY1(ind_S,ind_S),2), mp_iokr_param.center, ...
         mean(KY1(:,ind_S),2), mean(KY1(ind_S,:),1)); % centering
     clear KY1; 
@@ -65,12 +61,12 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     KY_tilde = zeros (size(KY));
     % Some precalculations
     D_squared              = D^2;
-    VVt                    = V*V';
-    VtD_squared            = V'*D_squared;
-    VtD_squaredK_CS        = VtD_squared*KY(ind_C,ind_S);
-    VtD_squaredK_CC        = VtD_squared*KY(ind_C,ind_C);
-    D_squaredVVt           = D_squared*VVt;
-    I_minus_D_squaredVVt_D = (sparse (1:n_C, 1:n_C, 1) - D_squaredVVt)*D;
+    VVt                    = V * V';
+    VtD_squared            = V' * D_squared;
+    VtD_squaredK_CS        = VtD_squared * KY(ind_C,ind_S);
+    VtD_squaredK_CC        = VtD_squared * KY(ind_C,ind_C);
+    D_squaredVVt           = D_squared * VVt;
+    I_minus_D_squaredVVt_D = (sparse (1:n_C, 1:n_C, 1) - D_squaredVVt) * D;
 
     KY_tilde(ind_S,ind_S) = KY(ind_S,ind_S) - VtD_squaredK_CS - ...
         VtD_squaredK_CS' + VtD_squaredK_CC*VtD_squared';

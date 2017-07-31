@@ -42,7 +42,7 @@ function IOKR_evaluation (inputDir, outputDir, param)
     
     % Set the defaults values for the parameter in PARAM if needed.
     param = MP_IOKR_Defaults.setDefaultsIfNeeded (param, ...
-        { 'debug_param', 'opt_param', 'iokr_param', 'data_param' });    
+        { 'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});    
       
     %% Load data 
     % ... input-kernels for the training examples
@@ -84,7 +84,8 @@ function IOKR_evaluation (inputDir, outputDir, param)
         param.opt_param = struct (   ...
             'val_lambda',  [0.5, 1], ...
             'nOuterFolds', 10,       ...
-            'nInnerFolds', 2);  
+            'nInnerFolds', 2,        ...
+            'cv_type',     'loocv');  
         
         n = size (KX_list{1}, 1);
         param.debug_param.debug_set = false (n, 1);        

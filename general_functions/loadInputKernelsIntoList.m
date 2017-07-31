@@ -12,9 +12,11 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExten
 
             % If a single kernel is used, than we force the "mkl" option to
             % be 'unimkl'. The weight for the kernel will be 1.
+            % FIXME: This should not be done here!
             param.mp_iokr_param.mkl = 'unimkl';
-        case upper ({'unimkl', 'alignf'})
-            disp (['Evaluation using multiple kernel learning: ', param.data_param.inputKernel]);
+            param.iokr_param        = 'unimkl';
+        case upper ('__ALL__')
+            disp (['Evaluation using multiple kernel learning. Used kernels: ', param.data_param.inputKernel]);
 
             KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/', kernelName, fileExtension)), ...
                 upper (param.data_param.availInputKernels), 'UniformOutput', false);

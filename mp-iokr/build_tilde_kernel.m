@@ -54,7 +54,7 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
         1:Y_C.getNumberOfExamples(), 'UniformOutput', false);
     % If a training example does not have a candidate we do not consider
     % its feature vectors.
-    has_Y_C  = cellfun (@(x) any (~ isnan (x(:))), Y_C_data);
+    has_Y_C  = spfun (@(x) any (~ isnan (x(:))), Y_C_data);
     Y_C_data = cell2mat (Y_C_data(has_Y_C));
     
     % Building and processing the output kernel matrix

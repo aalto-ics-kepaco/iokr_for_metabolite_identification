@@ -1,4 +1,4 @@
-function IOKR_evaluation (inputDir, outputDir, param)
+function run_IOKR_ACML17 (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 

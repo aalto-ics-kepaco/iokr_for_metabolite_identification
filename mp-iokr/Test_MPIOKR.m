@@ -94,6 +94,14 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
     n_test = Y_C_test.getNumberOfExamples();
     score  = cell (n_test,1);
     for j = 1:n_test
+        if (isnan (Y_C_test.getCandidateSet (j, false, 'num')))
+            score{j} = NaN;
+            
+            fprintf ('Scoring %d/%d: No candidates.\n', j, n_test);
+            
+            continue;
+        end % if
+        
         if (debug_param.verbose)
             tic;
         end % if

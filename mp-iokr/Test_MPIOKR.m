@@ -39,28 +39,36 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
             tic;
         end % if;
         
-        Y_train_all = [Y_train, ...
-            cell2mat(arrayfun (@(idx) double (Y_C_train.getCandidateSet (idx, true, 'data')), ...
-            1:Y_C_train.getNumberOfExamples(), 'UniformOutput', false))];
+        % If a training example does not have a candidate we do not consider
+        % its feature vectors.
+        Y_C_data = arrayfun (@(idx) double (Y_C_train.getCandidateSet (idx, true, 'data')), ...
+            1:Y_C_train.getNumberOfExamples(), 'UniformOutput', false);
+        has_Y_C = false (1, length (Y_C_data));
+        for ii = 1:length (Y_C_data)
+            has_Y_C(ii) = all (~ isnan (Y_C_data{ii}(:)));
+        end % for
+        Y_C_data = cell2mat (Y_C_data(full (has_Y_C)));
+        Y_train_all = [Y_train, Y_C_data];
+        
         n_train = size (Y_train, 2);
         n_Ci = arrayfun (@(idx) Y_C_train.getCandidateSet (idx, true, 'num'), ...
             1:Y_C_train.getNumberOfExamples());
+        % If a training example does not have a candidate we set its number of
+        % candidates to zero. 
+        n_Ci(isnan (n_Ci)) = 0;
         n_C_train = sum(n_Ci); % total number of candidates
         ind_S = 1:n_train;
         ind_C = n_train + (1:n_C_train);
         
         % Build the V and D matrices
         V = zeros(n_C_train, n_train);
-%         D = zeros(n_C_train, n_C_train);
         ind_0 = 0;
         for i = 1:n_train
             ind_i = ind_0+(1:n_Ci(i));
             V(ind_i,i) = 1;
-%             D(ind_i,ind_i) = 1/sqrt(n_Ci(i));
             ind_0 = ind_0+n_Ci(i);
         end
         V = sparse (V);
-%         D = sparse (D);
         D = sparse (diag (rude (n_Ci, 1 ./ sqrt (n_Ci))));
         
         D_squared              = D^2;

@@ -29,7 +29,10 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     
     n_Ci = arrayfun (@(id) Y_C.getCandidateSet (id, true, 'num'), ...
         1:Y_C.getNumberOfExamples());
-    n_C = sum(n_Ci); % total number of candidates
+    % If a training example does not have a candidate we set its number of
+    % candidates to zero. 
+    n_Ci(isnan (n_Ci)) = 0; 
+    n_C = sum(n_Ci); 
     
     % Build the V and D matrices
     V = zeros (n_C, n);
@@ -47,8 +50,12 @@ function [ KY_tilde, KY_S_C, V, D ] = build_tilde_kernel( Y, Y_C, KY_par, ...
     
     
     % FIXME: Seems that not all candidate sets are logical.
-    Y_C_data = cell2mat (arrayfun (@(id) double (Y_C.getCandidateSet (id, true, 'data')), ...
-        1:Y_C.getNumberOfExamples(), 'UniformOutput', false));
+    Y_C_data = arrayfun (@(id) double (Y_C.getCandidateSet (id, true, 'data')), ...
+        1:Y_C.getNumberOfExamples(), 'UniformOutput', false);
+    % If a training example does not have a candidate we do not consider
+    % its feature vectors.
+    has_Y_C  = cellfun (@(x) any (~ isnan (x(:))), Y_C_data);
+    Y_C_data = cell2mat (Y_C_data(has_Y_C));
     
     % Building and processing the output kernel matrix
     KY1  = build_kernel ([Y, Y_C_data], [Y, Y_C_data], KY_par); % O((l + m)^2)

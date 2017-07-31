@@ -20,9 +20,9 @@ function [ K ] = build_kernel( X1, X2, kernel_opt, only_diag )
         only_diag = false;
     end % if
     
-    if only_diag && (~ isequal (X1, X2))
-        error ('Diagonal of the kernel matrix makes only sense if both matrices are identical.');
-    end % if
+%     if only_diag && (~ isequal (X1, X2))
+%         error ('Diagonal of the kernel matrix makes only sense if both matrices are identical.');
+%     end % if
 
     % FIXME: Problems with logical matrices as '*' not defined.
     X1 = double (X1);

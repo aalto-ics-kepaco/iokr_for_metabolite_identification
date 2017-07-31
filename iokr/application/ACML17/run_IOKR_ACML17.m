@@ -51,7 +51,7 @@ function IOKR_evaluation (inputDir, outputDir, param)
         % want to debug the 'separate' kernel combination.
         param.data_param.availInputKernels = {'PPKR', 'NSF', 'CEC', 'CPJ'};
     end % if
-    [KX_list, param] = loadInputKernelsIntoList (inputDir, param);
+    [KX_list, param] = loadInputKernelsIntoList (strcat (inputDir, '/input_kernels/'), param);
     if (isempty (KX_list))
         error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
             'No kernel loaded.');

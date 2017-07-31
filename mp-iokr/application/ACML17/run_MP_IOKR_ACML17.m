@@ -196,6 +196,10 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
         % Calculate the scores for each candidate corresponding the current
         % test-examples
         % Training
+        if (param.debug_param.verbose)
+            tic;
+        end % if
+        
         KX_list_train = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.train_set), ...
             KX_list, 'UniformOutput', false);
         Y_train       = Y(:, data_param_fold.train_set);
@@ -203,6 +207,10 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
         trained_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
             param.ky_param, param.mp_iokr_param, param.opt_param, param.debug_param);
         clear KX_list_train;
+        
+        if (param.debug_param.verbose)
+            fprintf ('TRAINING TIME FULL: %.3fs\n', toc);
+        end % if
         
         % Scoring
         KX_list_train_test = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.test_set), ...

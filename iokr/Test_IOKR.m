@@ -51,6 +51,12 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
     n_test = Y_C_test.getNumberOfExamples();
     score = cell(n_test,1);
     for j = 1:n_test    
+        if (isnan (Y_C_test.getCandidateSet (j, false, 'num')))
+            score{j} = NaN;
+            
+            continue;
+        end % if
+        
         switch train_model.representation
             case 'feature'
                                 

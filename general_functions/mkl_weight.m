@@ -18,8 +18,7 @@ function [ w ] = mkl_weight( mkl_type, KX_list, KY )
     
     % Weight learning
     switch mkl_type
-        case 'alignf'
-            
+        case 'alignf'    
             % Centering input and output training Gram matrices                           
             KX_c = cellfun(@(x) center(x,mean(x,1),1) ,KX_list, 'UniformOutput', false); 
             KY_c = center(KY, mean(KY,1),1);
@@ -42,6 +41,9 @@ function [ w ] = mkl_weight( mkl_type, KX_list, KY )
     
         case 'unimkl'
             w = ones(n_kx,1)./n_kx;
+        otherwise
+            error ('mkl_weight:InvalidArgument', '%s is not a valid mkl-type.', ...
+                mkl_type);
     end
 
 end

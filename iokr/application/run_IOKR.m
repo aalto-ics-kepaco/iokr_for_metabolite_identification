@@ -1,4 +1,4 @@
-function [ ] = run_IOKR (inputDir, outputDir, cand, param)
+function [ ] = run_IOKR (inputDir, outputDir, cand)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -19,26 +19,23 @@ function [ ] = run_IOKR (inputDir, outputDir, cand, param)
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-%         {'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});
+    param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+        {'debug_param', 'opt_param', 'iokr_param', 'data_param', 'ky_param'});
     
     param.debug_param.randomSeed = 10;
     rng (param.debug_param.randomSeed);
     
     n_folds = param.opt_param.nOuterFolds;
-    param.opt_param.nInnerFolds = 10;
+    param.opt_param.nInnerFolds = 2;
    
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
-%     param.ky_param.representation  = 'kernel';
-%     param.ky_param.type            = 'gaussian';
-%     param.ky_param.base_kernel     = 'tanimoto';
-%     param.ky_param.param_selection = 'entropy';
-%     param.ky_param.representation  = 'feature';
-%     param.ky_param.type            = 'linear';
-%     param.ky_param.base_kernel     = 'linear';
-%     param.ky_param.param_selection = 'cv';
+    param.ky_param.representation  = 'feature';
+    param.ky_param.type            = 'gaussian';
+    param.ky_param.base_kernel     = 'linear';
+    param.ky_param.param_selection = 'entropy';
+    param.ky_param.rff_dimension   = 1000;
 
     % inchi keys, molecular formulas, fingerprints
     load ([inputDir '/compound_info.mat'], 'dt_inchi_mf_fp');
@@ -61,7 +58,6 @@ function [ ] = run_IOKR (inputDir, outputDir, cand, param)
     kernel_files = dir ([inputDir '/kernels/*.txt']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_param.inputKernel = 'unimkl';
     KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'] , param, '.txt');
     
     %--------------------------------------------------------------

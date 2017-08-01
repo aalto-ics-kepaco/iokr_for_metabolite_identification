@@ -257,6 +257,13 @@ function run_MP_IOKR_ACML17 (inputDir, outputDir, param)
     result = struct ('ranks', ranks, 'rank_perc', rankPerc, 'cand_num', candNum, ...
         'cand_num_sel', candNumSel, 'param', param); 
     
+    if (isfield (param.ky_param, 'rff'))
+        % We do not want that the random matrix defining the output
+        % feature vectors on the case of random fourier features effects
+        % the hash.
+        param.ky_param = rmfield (param.ky_param, 'rff');
+    end % if
+    
     settingHash = DataHash (struct (                            ...
         'cv_param',        param.data_param.cv_param,           ...
         'selection_param', param.data_param.selection_param,    ...

@@ -1,4 +1,4 @@
-function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
+function [ ] = run_MP_IOKR (inputDir, outputDir, cand)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -19,15 +19,14 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
-%         {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
+    param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+        {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
     
     param.debug_param.randomSeed = 10;
     rng (param.debug_param.randomSeed);
     
     n_folds = param.opt_param.nOuterFolds;
     param.opt_param.nInnerFolds = 10;
-%     param.opt_param.val_lambda = [param.opt_param.val_lambda, 1000, 10000, 100000];
    
     %--------------------------------------------------------------
     % Load and prepare data
@@ -40,14 +39,12 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
     % Extract fingerprints
     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
-%     param.ky_param.representation  = 'kernel';
-%     param.ky_param.type            = 'gaussian';
-%     param.ky_param.base_kernel     = 'tanimoto';
-%     param.ky_param.param_selection = 'entropy';
-%     param.ky_param.representation  = 'feature';
-%     param.ky_param.type            = 'linear';
-%     param.ky_param.base_kernel     = 'linear';
-%     param.ky_param.param_selection = 'cv';
+    param.ky_param.representation  = 'kernel';
+    param.ky_param.type            = 'gaussian';
+    param.ky_param.base_kernel     = 'linear';
+    param.ky_param.param_selection = 'entropy';
+    param.ky_param.rff_dimension   = 1000;
+    
 
     % Cross-validation
     cv = getCVIndices (struct ('nObservations', n, ...
@@ -60,8 +57,6 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
     % Candidate selection
     param.data_param.selection_param = struct ( ...
         'strategy', 'random', 'perc', 1, 'inclExpCand', false);
-%     param.data_param.selection_param = struct ( ...
-%         'strategy', 'maxElement', 'maxNumCand', 10, 'inclExpCand', false);
     selec = getCandidateSelection (Y_C, inchi, ...
        param.data_param.selection_param);      
     Y_C.setSelectionsOfCandidateSets (selec);
@@ -70,7 +65,6 @@ function [ ] = run_MP_IOKR (inputDir, outputDir, cand, param)
     kernel_files = dir ([inputDir '/kernels/*.txt']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    param.data_param.inputKernel = param.mp_iokr_param.mkl;
     KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'], param, '.txt');
     
     %--------------------------------------------------------------

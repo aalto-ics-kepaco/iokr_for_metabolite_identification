@@ -1,4 +1,5 @@
-function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y_train, ky_param, opt_param, iokr_param )
+function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, ...
+    Y_train, ky_param, opt_param, iokr_param)
 %======================================================
 % DESCRIPTION:
 % Selection of the regularization parameter in IOKR in the case of a kernel represention in output
@@ -32,9 +33,24 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
         case 'feature'
                         
             % Multiple kernel learning
-            KY_par = struct('type','linear');
-            KY_train = build_kernel(Y_train, Y_train, KY_par);
-            w = mkl_weight(iokr_param.mkl, KX_list_train, normmat(KY_train));
+            switch ky_param.type
+                case 'linear'
+                    KY_train = build_kernel (Y_train, Y_train, ky_param);
+                case 'gaussian'
+                    assert (strcmp (ky_param.param_selection, 'entropy'), ...
+                        'Random fourier features currently only implemented for entropy-gamma-selection.');
+                    ky_param.gamma = select_gamma_entropy (Y_train, ky_param);
+                    
+                    % RANDOM FOURIER FEATURES
+                    ky_param.rff = RandomFourierFeatures (size (Y_train, 1), ky_param.rff_dimension);
+                    Y_train      = ky_param.rff.getRandomFourierFeatures (Y_train, ky_param.gamma);
+                    KY_train     = build_kernel (Y_train, Y_train, struct ('type', 'linear'));
+                otherwise
+                    error ('Select_param_IOKR:InvalidArgument', ...
+                        'Using features as output representation currently only "linear" and "gaussian" kernels are supported. Not %s.', ...
+                        ky_param.type);
+            end % switch    
+            w = mkl_weight(iokr_param.mkl, KX_list_train, normmat (KY_train));
             
             % Input kernels processing and combination
             KX_train = input_kernel_preprocessing_train(KX_list_train, w, iokr_param.center);
@@ -49,7 +65,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR( KX_list_train, Y
             [~, ind_lambda_opt] = min(mse);
             lambda_opt = val_lambda(ind_lambda_opt);
             w_opt = w;
-            KY_par_opt = KY_par;
+            KY_par_opt = ky_param;
             
         case 'kernel'
         

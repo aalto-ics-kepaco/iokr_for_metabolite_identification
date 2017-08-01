@@ -34,7 +34,7 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
     end % if
 
     n_train          = Y_C_train.getNumberOfExamples();
-    d                = numel (Y_mean);
+    d                = numel (mean_Y);
     Mean_Psi_C_train = zeros (d, n_train);
     Cov_Psi_C_train  = zeros (d, d);
     

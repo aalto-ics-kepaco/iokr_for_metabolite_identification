@@ -23,7 +23,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
 %======================================================
 
     % Computation of the input kernel between training and test examples
-    KX_train_test = input_kernel_preprocessing_test(KX_list_train_test, ...
+    KX_train_test = input_kernel_preprocessing_test (KX_list_train_test, ...
         KX_list_test, train_model.process_input, ker_center);
     
     % Prediction on the test set 
@@ -37,10 +37,21 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
     % Pre-image
     
     % Preprocessing of the training outputs    
-    switch train_model.representation
+    switch train_model.KY_par.representation
         case 'feature'
-            [Psi_train, process_output] = ...
-                output_feature_preprocessing_train(Y_train, ker_center);
+            switch train_model.KY_par.type 
+                case 'linear'
+                    % Y_train = Y_train
+                case 'gaussian'
+                    Y_train = train_model.KY_par.rff.getRandomFourierFeatures ( ...
+                        Y_train, train_model.KY_par.gamma);
+                otherwise
+                    error ('Test_IOKR:InvalidArgument', ...
+                        'Using features as output representation currently only "linear" and "gaussian" kernels are supported. Not %s.', ...
+                        train_model.KY_par.type );
+            end % switch
+            
+            [Psi_train, process_output] = output_feature_preprocessing_train (Y_train, ker_center);
         case 'kernel'
             [~,         process_output] = ...
                 output_kernel_preprocessing_train(Y_train, ...
@@ -57,11 +68,23 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
             continue;
         end % if
         
-        switch train_model.representation
+        switch train_model.KY_par.representation
             case 'feature'
-                                
-                Psi_Cj = norma(Y_C_test.getCandidateSet (j, false, 'data'), ...
-                    process_output.mean, ker_center);
+                Y_Cj = Y_C_test.getCandidateSet (j, false, 'data');
+                
+                switch train_model.KY_par.type 
+                    case 'linear'
+                        % Y_Cj = Y_Cj
+                    case 'gaussian'
+                        Y_Cj = train_model.KY_par.rff.getRandomFourierFeatures ( ...
+                            Y_Cj, train_model.KY_par.gamma);
+                    otherwise
+                        error ('Test_IOKR:InvalidArgument', ...
+                            'Using features as output representation currently only "linear" and "gaussian" kernels are supported. Not %s.', ...
+                            train_model.KY_par.type );
+                end % switch      
+                
+                Psi_Cj = norma (Y_Cj, process_output.mean, ker_center);
                 
                 score{j} = (Psi_train * B(:,j))' * Psi_Cj;
                 

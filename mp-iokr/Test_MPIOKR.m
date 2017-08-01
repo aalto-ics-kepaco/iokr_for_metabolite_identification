@@ -34,7 +34,7 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
     B = train_model.C * KX_train_test;
     
     % Pre-image
-    if (~ strcmp (KY_par_opt.type, 'linear'))
+    if strcmp (KY_par_opt.representation, 'kernel')
         if (debug_param.verbose)
             tic;
         end % if;
@@ -104,16 +104,33 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
         
         if (debug_param.verbose)
             tic;
+            fprintf ('Scoring %d/%d: ', j, n_test);
         end % if
         
-        switch KY_par_opt.type
-            case 'linear'
-                                                 
-                Psi_Cj = norma(Y_C_test.getCandidateSet (j, false, 'data'), mean(Y_train,2), ker_center);
+        switch KY_par_opt.representation
+            case 'feature'
+                Y_Cj = Y_C_test.getCandidateSet (j, false, 'data');
+                
+                switch KY_par_opt.type
+                    case 'linear'
+                        % Y_Cj = Y_Cj;
+                    case 'gaussian'
+                        % RANDOM FOURIER FEATURES
+                        Y_Cj = KY_par_opt.rff.getRandomFourierFeatures (Y_Cj, KY_par_opt.gamma);
+                    otherwise
+                        error ('Test_MPIOKR:InvalidArgument', ...
+                            'Using features as output representation currently only "linear" and "gaussian" kernels are supported. Not %s.', ...
+                            ky_param.type)
+                end % switch
+                assert (size (Y_Cj, 1) == numel (train_model.process_output.mean), ...
+                    'Training output feature mean vector must match the dimension of the candidate output feature vectors.');
+                
+                Psi_Cj = norma (Y_Cj, train_model.process_output.mean, ker_center);
+                Psi_Cj = full (Psi_Cj);
                 
                 score{j} = B(:,j)' * Psi_Cj;
                 
-            otherwise                
+            case 'kernel'            
                 % Computation of the output kernel between the training +
                 % candidate training examples and the candidate set Cj
                 KY_Cj_diag  = build_kernel (Y_C_test.getCandidateSet (j, false, 'data'), ...    % O(m_j),   only diagonal
@@ -143,11 +160,19 @@ function [ score ] = Test_MPIOKR (KX_list_train_test, KX_list_test, train_model,
                 score{j} = B(:,j)' * KY_tilde_Cj;           
                 
                 if (debug_param.verbose)
-                    fprintf ('Scoring %d/%d with m=%d train-candidates and m_j=%d test-candidates: %.3fs\n', ...
-                        j, n_test, n_C_train, ...   
-                        Y_C_test.getCandidateSet (j, false, 'num'), toc);
-                end % if   
+                    fprintf ('m=%d train-candidates and m_j=%d test-candidates. - ', ...
+                        n_C_train, Y_C_test.getCandidateSet (j, false, 'num'));
+                end % if
+                
+            otherwise
+                error ('Test_MPIOKR:InvalidArgument',           ...
+                    '%s is not a valid output representation.', ...
+                    KY_par_opt.representation);
         end % switch     
+        
+        if (debug_param.verbose)
+            fprintf ('%.3fs\n', toc);
+        end % if
     end % for
 
 end

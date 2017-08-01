@@ -1,5 +1,5 @@
 function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
-    Y_C_train, mean_Y, ker_center, verbose)
+    Y_C_train, mean_Y, ker_center, ky_param, verbose)
 %======================================================
 % DESCRIPTION:
 % Computation of the candidate feature mean and covariance for
@@ -22,6 +22,10 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
 %
 %======================================================
     if (nargin < 4)
+        ky_param = struct ('type', 'linear');
+    end % if
+    
+    if (nargin < 5)
         verbose = false;
     end % if
     
@@ -29,11 +33,11 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
         reverseStr = '';
     end % if
 
-    n_train = Y_C_train.getNumberOfExamples();
-        
-    d = size (Y_C_train.getCandidateSet (1, 0, 'data'), 1);
-    Mean_Psi_C_train = zeros(d,n_train);
-    Cov_Psi_C_train = zeros(d,d);
+    n_train          = Y_C_train.getNumberOfExamples();
+    d                = numel (Y_mean);
+    Mean_Psi_C_train = zeros (d, n_train);
+    Cov_Psi_C_train  = zeros (d, d);
+    
     for idx = 1:n_train
          if (verbose)
             percentDone = 100 * idx / n_train;
@@ -54,18 +58,21 @@ function [ Mean_Psi_C_train, Cov_Psi_C_train ] = Compute_cov_mean_feat ( ...
         end % if
         
         Y_Cj = full (Y_C_train.getCandidateSet (idx, true, 'data'));       
-        d = size (Y_Cj, 1);
-        
-        assert (d == numel (mean_Y), ...
-            'Dimension of the "data" does not match the dimension of the mean vector.')
         assert (size (Y_Cj, 2) == nj);
         
         % centering and normalization of the feature vectors
-        Psi_Cjn = norma(Y_Cj, mean_Y, ker_center);
+        if strcmp (ky_param.type, 'gaussian')
+            % RAMDOM FOURIER FEATURES
+            Y_Cj = ky_param.rff.getRandomFourierFeatures (Y_Cj, ky_param.gamma);
+        end % if
+        assert (size (Y_Cj, 1) == numel (mean_Y), ...
+            'Dimension of the "data" does not match the dimension of the mean vector.')
+        Psi_Cjn = norma (Y_Cj, mean_Y, ker_center);
+        
         clear Y_Cj;
 
         % computation of the mean and the covariance
-        Mean_Psi_C_train(:,idx) = mean(Psi_Cjn,2);
+        Mean_Psi_C_train(:, idx) = mean (Psi_Cjn, 2);
         Cov_Psi_C_train = Cov_Psi_C_train + 1/nj*(Psi_Cjn ...
             - repmat(Mean_Psi_C_train(:,idx),1,nj))*(Psi_Cjn - repmat(Mean_Psi_C_train(:,idx),1,nj))';
     end

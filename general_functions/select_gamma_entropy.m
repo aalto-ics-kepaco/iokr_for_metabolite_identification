@@ -17,7 +17,6 @@ function [ gamma ] = select_gamma_entropy( X, kernel_opt )
     n = size(X,2);
     
     if strcmp(kernel_opt.type, 'gaussian')
-    
         % computation of the base kernel (linear or Tanimoto)
         base_ker_opt = set_kernel_opt(kernel_opt.base_kernel);
 
@@ -29,10 +28,10 @@ function [ gamma ] = select_gamma_entropy( X, kernel_opt )
         % the gamma parameter maximising the entropy of the Gaussian kernel is
         % obtained by averaging all the pairwise distances and inverting this mean
         gamma = (n*(n-1)) / (2*sum(sum(triu(Kdist,1))));
-    
     else
-        error ('The function select_gamma_entropy can only be used in the case of Gaussian kernel.');
-    end
-        
-end
+        error ('select_gamma_entropy:InvalidArguments', ...
+            'Entropy measure is only useful if the kernel type is gaussian: %s', ...
+            kernel_opt.type);
+    end % if
+end % function
 

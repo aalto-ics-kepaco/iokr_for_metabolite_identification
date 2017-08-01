@@ -1,4 +1,4 @@
-function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
+function run_MP_IOKR_ACML17 (inputDir, outputDir, param)
 %% IOKR_MP_EVALUATION evaluation of the metabolite-identification using IOKR-MP
 %    ALGORITHM:
 %       = Load data associated with the metabolites = 
@@ -99,6 +99,7 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
     % ... fingerprints for the training examples
     Y = load (strcat (inputDir, '/fingerprints/fp.mat'));
     Y = full (Y.Y);
+%     Y = Y.Y;
     if (param.debug_param.isDebugMode)
         Y = Y(:, param.debug_param.debug_set);
     end % if
@@ -197,7 +198,7 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
         % test-examples
         % Training
         if (param.debug_param.verbose)
-            tic;
+            timer_total = tic;
         end % if
         
         KX_list_train = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.train_set), ...
@@ -209,10 +210,14 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
         clear KX_list_train;
         
         if (param.debug_param.verbose)
-            fprintf ('TRAINING TIME FULL: %.3fs\n', toc);
+            fprintf ('TRAINING TIME FULL: %.3fs\n', toc (timer_total));
         end % if
         
         % Scoring
+        if (param.debug_param.verbose)
+            timer_total = tic;
+        end % if
+        
         KX_list_train_test = cellfun(@(x) x(data_param_fold.train_set, data_param_fold.test_set), ...
             KX_list, 'UniformOutput', false);
         KX_list_test       = cellfun(@(x) x(data_param_fold.test_set, data_param_fold.test_set),  ...
@@ -231,6 +236,10 @@ function IOKR_MP_reverse_evaluation (inputDir, outputDir, param)
         ranks(data_param_fold.test_set) = ranks_test;
         
         clear data_param_fold;
+        
+        if (param.debug_param.verbose)
+            fprintf ('SCORING TIME FULL: %.3fs\n', toc (timer_total));
+        end % if
     end % for
 
     assert (all (isnan (ranks) == (~ eval_set)), ...

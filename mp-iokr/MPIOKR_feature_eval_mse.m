@@ -1,4 +1,5 @@
-function [ mse ] = MPIOKR_feature_eval_mse( KX_list, Psi, mean_Y_train, Y_C, gamma_opt, mp_iokr_param, opt_param, debug_param)
+function [ mse ] = MPIOKR_feature_eval_mse( KX_list, Psi, mean_Y_train, Y_C, ...
+    gamma_opt, mp_iokr_param, opt_param, ky_param, debug_param)
 %======================================================
 % DESCRIPTION:
 % Computation of the mean squared errors (mse) for different values of the 
@@ -33,8 +34,7 @@ function [ mse ] = MPIOKR_feature_eval_mse( KX_list, Psi, mean_Y_train, Y_C, gam
 
     mse_cv = zeros(length(val_lambda), n_folds);
 
-    for j = 1:n_folds % Cross-validation
-        
+    for j = 1:n_folds % Cross-validation 
         train_set = find(training(c,j));
         test_set = find(test(c,j));
         
@@ -53,8 +53,10 @@ function [ mse ] = MPIOKR_feature_eval_mse( KX_list, Psi, mean_Y_train, Y_C, gam
         Y_C_train = Y_C.getSubset(train_set);
         Y_C_test = Y_C.getSubset(test_set);
 
-        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, mean_Y_train, mp_iokr_param.center, debug_param.verbose);
-        [Mean_Psi_C_test, Cov_Psi_C_test] = Compute_cov_mean_feat(Y_C_test, mean_Y_train, mp_iokr_param.center, debug_param.verbose);
+        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat (Y_C_train, mean_Y_train, ...
+            mp_iokr_param.center, ky_param, debug_param.verbose);
+        [Mean_Psi_C_test, Cov_Psi_C_test]   = Compute_cov_mean_feat (Y_C_test, mean_Y_train, ...
+            mp_iokr_param.center, ky_param, debug_param.verbose);
         
         Mc = cell(n_kx,1);
         for k = 1:n_kx

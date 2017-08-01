@@ -33,11 +33,16 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
 
     % If the param_selection field is set to 'entropy', we use the gamma parameter 
     % that maximizes the entropy of the kernel (can only used with Gaussian kernels)
-    if strcmp (ky_param.type, 'gaussian')
-        if isfield (ky_param, 'param_selection') && strcmp (ky_param.param_selection, 'entropy')
-            ky_param.gamma = select_gamma_entropy (Y_train, ky_param);
-        end
-    end
+    if (strcmp (ky_param.type, 'gaussian')) && (strcmp (ky_param.param_selection, 'entropy'))
+        ky_param.gamma = select_gamma_entropy (Y_train, ky_param);
+    end % if 
+    if (strcmp (ky_param.type, 'gaussian')) && (strcmp (ky_param.representation, 'feature'))
+        % RANDOM FOURIER FEATURES
+        assert (ismember ('rff_dimension', fieldnames (ky_param)), ...
+            'The random fourier feature dimension must be specified.');
+        
+        ky_param.rff = RandomFourierFeatures (size (Y_train, 1), ky_param.rff_dimension);
+    end % if 
          
     % Generates all possible parameter combinations for the output kernel
     ky_param_all_comb = IterGrid(ky_param);
@@ -47,15 +52,38 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
     w = cell (length (ky_param_all_comb), 1);
     for ip = 1:length(ky_param_all_comb)
         % Multiple kernel learning
-        KY_train = build_kernel (Y_train, Y_train, ky_param_all_comb(ip));
-        w{ip}    = mkl_weight (mp_iokr_param.mkl, KX_list_train, normmat (KY_train));
+        if (strcmp (ky_param.representation, 'feature')) && (strcmp (ky_param.type, 'gaussian'))
+            % RANDOM FOURIER FEATURES
+            Psi_train = ky_param.rff.getRandomFourierFeatures (Y_train, ky_param_all_comb(ip).gamma);
+            
+            % We can approximate the gaussian-features using random fourier
+            % features. Calculating the _linear kernel_ of a set of random 
+            % fourier features approximates the a gaussian kernel.
+            KY_train = build_kernel (Psi_train, Psi_train, struct ('type', 'linear'));
+        else
+            KY_train = build_kernel (Y_train, Y_train, ky_param_all_comb(ip));
+        end % if
+        
+        w{ip} = mkl_weight (mp_iokr_param.mkl, KX_list_train, normmat (KY_train));
 
         % Input kernels processing and combination
         KX_train = mpiokr_input_kernel_preprocessing_train (KX_list_train, w{ip}, mp_iokr_param);
 
         % Output processing
-        if strcmp (ky_param.type, 'linear')
-            [Psi_train, process_output] = output_feature_preprocessing_train (Y_train, mp_iokr_param.center);
+        if strcmp (ky_param.representation, 'feature')
+            switch ky_param.type
+                case 'linear'
+                    [Psi_train, process_output] = output_feature_preprocessing_train ( ...
+                        Y_train, mp_iokr_param.center);
+                case 'gaussian'
+                    % RANDOM FOURIER FEATURES
+                    [Psi_train, process_output] = output_feature_preprocessing_train ( ...
+                        Psi_train, mp_iokr_param.center);
+                otherwise
+                    error ('Select_param_MPIOKR:InvalidArgument', ...
+                        'Using features as output representation currently only "linear" and "gaussian" kernels are supported. Not %s.', ...
+                        ky_param.type)
+            end % switch
         else
             KY_train = output_kernel_preprocessing_train (Y_train, ky_param_all_comb(ip), mp_iokr_param.center);
         end
@@ -63,9 +91,9 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
         % Selection of the regularization parameter of reverse IOKR
         gamma_opt = zeros(n_kx,1);
         for i = 1:n_kx
-            if strcmp(ky_param.type,'linear')
-                mse_gamma = IOKR_kernel_eval_mse(Psi_train'*Psi_train, KX_train{i}, ...
-                    struct('val_lambda', val_gamma, 'cv_type', 'loocv'));
+            if strcmp (ky_param.representation, 'feature')
+                mse_gamma = IOKR_kernel_eval_mse (build_kernel (Psi_train, Psi_train, struct ('type', 'linear')), ...
+                    KX_train{i}, struct('val_lambda', val_gamma, 'cv_type', 'loocv'));
             else
                 mse_gamma = IOKR_kernel_eval_mse(KY_train, KX_train{i}, ...
                     struct('val_lambda', val_gamma, 'cv_type', 'loocv'));
@@ -83,22 +111,10 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
             gamma_opt_red = gamma_opt;
         end
 
-%         Mc = cell(n_kx,1);
-%         for k = 1:n_kx
-%             if strcmp(ky_param.type,'linear')
-%                 Mc{k} = (gamma_opt_red(k) * eye(n_train) + (Psi_train'*Psi_train)) \ (Psi_train');
-%             else
-%                 % TODO: Can we use the Cholesky decomposition here?
-%                 Mc{k} = inv (gamma_opt_red(k) * eye(n_train) + KY_train);
-%             end
-%         end
-%         M = cell2mat (Mc);
-%         clear Mc;
-
         % Computation of the MSE for the different regularization parameters
-        if strcmp (ky_param.type, 'linear')
+        if strcmp (ky_param.representation, 'feature')
             mse(:,ip) = MPIOKR_feature_eval_mse (KX_train, Psi_train, process_output.mean, ...
-                Y_C_train, gamma_opt_red, mp_iokr_param, opt_param, debug_param);
+                Y_C_train, gamma_opt_red, mp_iokr_param, opt_param, ky_param_all_comb(ip), debug_param);
         else
             mse(:,ip) = MPIOKR_kernel_eval_mse (KX_train, Y_train, Y_C_train, ...
                 ky_param_all_comb(ip), gamma_opt_red, mp_iokr_param, opt_param, debug_param);

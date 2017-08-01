@@ -41,8 +41,22 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     KX_train = blkdiag (KX_train{:});
     
     % Output processing
-    if strcmp(KY_par_opt.type,'linear')
-        [Psi_train, process_output] = output_feature_preprocessing_train(Y_train, mp_iokr_param.center);
+    if strcmp (ky_param.representation, 'feature')
+        switch ky_param.type
+            case 'linear'
+                [Psi_train, process_output] = output_feature_preprocessing_train ( ...
+                    Y_train, mp_iokr_param.center);
+            case 'gaussian'
+                % RANDOM FOURIER FEATURES
+                Psi_train = KY_par_opt.rff.getRandomFourierFeatures (Y_train, KY_par_opt.gamma);
+                
+                [Psi_train, process_output] = output_feature_preprocessing_train ( ...
+                    Psi_train, mp_iokr_param.center);
+            otherwise
+                error ('Select_param_MPIOKR:InvalidArgument', ...
+                    'Using features as output representation currently only "linear" and "gaussian" kernels are supported. Not %s.', ...
+                    ky_param.type)
+        end % switch
     else
         [KY_train, process_output] = output_kernel_preprocessing_train(Y_train, KY_par_opt, mp_iokr_param.center);
     end
@@ -50,7 +64,7 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     % Computation of the matrices M and I
     Mc = cell(n_kx,1);
     for k = 1:n_kx
-        if strcmp(KY_par_opt.type,'linear')
+        if strcmp (KY_par_opt.representation, 'feature')
             Mc{k} = (gamma_opt_u(k) * eye(n_train) + (Psi_train'*Psi_train)) \ (Psi_train');
         else
             Mc{k} = inv(gamma_opt_u(k) * eye(n_train) + KY_train);
@@ -67,8 +81,9 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
     clear Ic;
     
     % Training
-    if strcmp(KY_par_opt.type,'linear')
-        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat(Y_C_train, process_output.mean, mp_iokr_param.center, debug_param.verbose);
+    if strcmp (KY_par_opt.representation, 'feature')
+        [Mean_Psi_C_train, Cov_Psi_C_train] = Compute_cov_mean_feat (Y_C_train, ...
+            process_output.mean, mp_iokr_param.center, KY_par_opt, debug_param.verbose);
         
         A1 = I - M * Mean_Psi_C_train;
         PsiAt = (Psi_train - Mean_Psi_C_train) * A1' + Cov_Psi_C_train*M';
@@ -83,7 +98,11 @@ function [ train_model ] = Train_MPIOKR( KX_list_train, Y_train, Y_C_train, ...
         C = (A')/(lambda_opt * eye(n_kx*n_train) + KX_train * AAt);
     end
    
-    train_model = struct('C',C,'process_input',process_input,'process_output',process_output,'KY_par',KY_par_opt,'gamma_opt',gamma_opt);
-    
+    train_model = struct (                ...
+        'C',              C,              ...
+        'process_input',  process_input,  ...
+        'process_output', process_output, ...
+        'KY_par',         KY_par_opt,     ...
+        'gamma_opt',      gamma_opt);
 end
 

@@ -38,11 +38,8 @@ function [ lambda_opt, gamma_opt, KY_par_opt, w_opt ] = Select_param_MPIOKR ( ..
     end % if 
     if (strcmp (ky_param.type, 'gaussian')) && (strcmp (ky_param.representation, 'feature'))
         % RANDOM FOURIER FEATURES
-        assert (ismember ('rff_dimension', fieldnames (ky_param)), ...
-            'The random fourier feature dimension must be specified.');
-        
-        ky_param.rff = RandomFourierFeatures (size (Y_train, 1), ky_param.rff_dimension);
-    end % if 
+        assert (isfield (ky_param, 'rff'), 'Random fourier feature matrix must be provided.');
+    end % if
          
     % Generates all possible parameter combinations for the output kernel
     ky_param_all_comb = IterGrid(ky_param);

@@ -175,6 +175,15 @@ function run_MP_IOKR_ACML17 (inputDir, outputDir, param)
         param.data_param.cv       = getCVIndices (param.data_param.cv_param);
     end % if
     
+    % Initiate the output kernel approximation in case
+    if (strcmp (param.ky_param.type, 'gaussian')) && (strcmp (param.ky_param.representation, 'feature'))
+        % RANDOM FOURIER FEATURES
+        assert (ismember ('rff_dimension', fieldnames (param.ky_param)), ...
+            'The random fourier feature dimension must be specified.');
+        
+        param.ky_param.rff = RandomFourierFeatures (size (Y, 1), param.ky_param.rff_dimension);
+    end % if
+    
     %% Evaluate the performance using 10-fold cv
     ranks = NaN (Y_C.getNumberOfExamples(), 1);
 

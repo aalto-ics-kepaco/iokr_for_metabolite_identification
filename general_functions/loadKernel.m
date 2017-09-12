@@ -111,5 +111,5 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
                 'The kernel-matrix files is not valid. Only .txt and .mat are allowed.\n');
     end % switch
       
-    fprintf ('Loading the kernel took %.3fs.\n', toc);
+    fprintf ('Loading the kernel-matrix took %.3fs.\n', toc);
 end % function

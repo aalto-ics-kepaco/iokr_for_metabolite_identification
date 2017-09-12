@@ -4,6 +4,7 @@ classdef CandidateSets < handle
         data_handle_;
         lut_;
         selec_;
+        selec_feature_;
     end % properties: write private, read public
     
     properties (Constant, Access = private)
@@ -96,8 +97,8 @@ classdef CandidateSets < handle
             isValid = true;
             errorStr = '';
             
-            if (size (lut, 2) > 1)
-                errorStr = 'Look-Up-Table must be a column-vector.';
+            if (~ isvector (lut))
+                errorStr = 'Look-Up-Table must be a vector.';
                 
                 isValid = false; 
                 return;
@@ -110,10 +111,60 @@ classdef CandidateSets < handle
             end % if            
         end % function
         
+        function [isValid, errorStr] = validateDataSelection (data_handle, selec_feature)
+        %% VALIDATEDATASELECTION validates the feature selection
+            isValid = true;
+            errorStr = '';
+            
+            if (ischar (selec_feature)) 
+                if (~ strcmpi (selec_feature, 'ALL'))
+                    errorStr = 'Feature selection using string only supports "ALL".';
+
+                    isValid = false;
+                    return;
+                else
+                    return;
+                end % if
+            end % if
+            
+            % Determine the feature dimension
+            d = size (data_handle.data_(1).(CandidateSets.candidateSetFieldnames.representation), 1);
+            
+            if (~ islogical (selec_feature))
+                errorStr = 'Feature selection must be logical.';
+                
+                isValid = false;
+                return;
+            end % if
+            if (~ isvector (selec_feature))
+                errorStr = 'Feature selection must be a vector.';
+                
+                isValid = false; 
+                return;
+            end % if
+            if (numel (selec_feature) > d)
+                errorStr = 'Feature selection does not match data dimension.';
+                
+                isValid = false;
+                return;
+            end % if
+        end % function 
+        
         function [isValid, errorStr] = validateSelection (data_handle, lut, selec)
         %% VALIDATESELECTION validates the selection structure
             isValid = true;
             errorStr = '';
+            
+            if (ischar (selec)) 
+                if (~ strcmpi (selec, 'ALL'))
+                    errorStr = 'Selection using string only supports "ALL".';
+
+                    isValid = false;
+                    return;
+                else
+                    return;
+                end % if
+            end % if
             
             if (~ iscell(selec) || all (size (selec) > 1))
                 errorStr = 'Selections must be provided as cell-vector.';
@@ -151,7 +202,7 @@ classdef CandidateSets < handle
 %                     isValid = false;
 %                     return;
 %                 end % if
-                if (~ any (isnan (selec{i})) & ~ islogical (selec{i}))
+                if (~ any (isnan (selec{i})) && ~ islogical (selec{i}))
                     errorStr = 'The selection vector must be of class logical or NaN.';
                     
                     isValid = false;
@@ -193,7 +244,7 @@ classdef CandidateSets < handle
     end % methods
     
     methods (Access = public)
-        function obj = CandidateSets (data_handle, lut, selec)
+        function obj = CandidateSets (data_handle, lut, selec, selec_feature)
         %% CANDIDATESETS Constructor of the class
         %    obj = CANDIDATESETS (PTRTOCANDIDATEDATA, LUT) creates an object
         %    representing a candidate set. A pointer to the data of the 
@@ -208,6 +259,12 @@ classdef CandidateSets < handle
         %    for each example the selection of the candidates of the
         %    associated candidate set. 
         %
+        %    obj = CANDIDATESETS (PTRTOCANDIATEDATA, LUT, SELECTION, DATA_SELECTION) 
+        %    creates an object representing a candidate set. The DATA_SELECTION 
+        %    defines the subset of the feature representation returned on 
+        %    access: data(DATA_SELECTION, :) returns only a subset of the
+        %    candidate representation.
+        %
         %    INPUTS:
         %       ptrToCandidateData 
         %               DATAHANLDE storing the (m x 1) dimensional struct
@@ -215,15 +272,30 @@ classdef CandidateSets < handle
         %               of the following shape:
         %               data(i) = struct ('data', DATA, 'id', IDS, ...
         %                   'num', NUMBEROFELEMENTS)
-        %       lut     The Look-Up-Table is a (l x 1) dimensional column
-        %               vector. Each entry in this vector associates an
-        %               example with candidate set. The elements of this
+        %       lut     The Look-Up-Table is a l - dimensional vector. 
+        %               Each entry in this vector associates an
+        %               example with a candidate set. The elements of this
         %               vector are from the range {1, ..., m}. 
+        %               lut : {1, ..., l} --> {1, ..., m}
         %       selection
         %               (l x 1) dimensional cell array. Each cell i contains
         %               a logical vector of length m(i). This logical
         %               vector indicates whether a certain candidate is in
         %               the selection or not.
+        %   
+        %               OR
+        %
+        %               String 'ALL' if all candidate should be selected.
+        %               This option is useful if no candidate but a feature
+        %               selection is desired.
+        %
+        %       feature_selection
+        %               d - dimensional logical vector. The 'true'
+        %               indices represent the used features.
+        %
+        %               OR
+        %
+        %               String 'ALL' if all features should be selected.
         %
         %    OUTPUT: 
         %       obj     A valid object of class CANDIDATESETS. 
@@ -252,15 +324,37 @@ classdef CandidateSets < handle
             obj.lut_ = lut;
             
             % Selection is provided            
-            if (nargin > 2)
+            if (nargin > 2)          
                 [isValid, errorStr] = CandidateSets.validateSelection (obj.data_handle_, obj.lut_, selec);
                 if (~ isValid)
                     error ('CandidateSets:CandidateSets:InvalidArgument', errorStr);
                 end % if
                             
-                obj.selec_ = selec;
+                if (strcmpi (selec, 'ALL'))
+                    obj.resetSelectionToAllCandidates();
+                else
+                    obj.selec_ = selec;
+                end % if
             else
                 obj.resetSelectionToAllCandidates();
+            end % if
+            
+            % Data selection is provided
+            if (nargin > 3)
+                [isValid, errorStr] = CandidateSets.validateDataSelection (obj.data_handle_, selec_feature);
+                if (~ isValid)
+                    error ('CandidateSets:CandidateSets:InvalidArgument', errorStr);
+                end % if
+                
+                if (strcmpi (selec_feature, 'ALL'))
+                    d = size (obj.data_handle_.data_(1).(CandidateSets.candidateSetFieldnames.representation), 1);
+                    obj.selec_feature_ = true (d, 1);
+                else
+                    obj.selec_feature_ = selec_feature;
+                end % if
+            else
+                d = size (obj.data_handle_.data_(1).(CandidateSets.candidateSetFieldnames.representation), 1);
+                obj.selec_feature_ = true (d, 1);
             end % if
         end % function: constructor
         
@@ -303,7 +397,7 @@ classdef CandidateSets < handle
                 end % if
             end % if
             
-            lhs = CandidateSets (rhs.data_handle_, rhs.lut_(ids), rhs.selec_(ids));
+            lhs = CandidateSets (rhs.data_handle_, rhs.lut_(ids), rhs.selec_(ids), rhs.selec_feature_);
         end % function    
         
         function lhs = getCandidateSet (rhs, id, onlySelection, fieldname)
@@ -387,14 +481,19 @@ classdef CandidateSets < handle
                     if (isempty (fieldname))
                         lhs = rhs.data_handle_.data_(rhs.lut_(id));
                     else
-                        lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname);
+                        switch (fieldname)
+                            case CandidateSets.candidateSetFieldnames.representation
+                                lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(rhs.selec_feature_, :);
+                            otherwise
+                                lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname);
+                        end % switch
                     end % if
                 case true
                     if (isempty (fieldname))
                         % Copy the tree main fields into the output.
                         lhs = struct ();
                         lhs.(CandidateSets.candidateSetFieldnames.representation) = ...
-                            rhs.data_handle_.data_(rhs.lut_(id)).(CandidateSets.candidateSetFieldnames.representation)(:, rhs.selec_{id});
+                            rhs.data_handle_.data_(rhs.lut_(id)).(CandidateSets.candidateSetFieldnames.representation)(rhs.selec_feature_, rhs.selec_{id});
                         lhs.(CandidateSets.candidateSetFieldnames.identifier) = ...
                             rhs.data_handle_.data_(rhs.lut_(id)).(CandidateSets.candidateSetFieldnames.identifier)(rhs.selec_{id});
                         lhs.(CandidateSets.candidateSetFieldnames.numberOfElements) = sum (rhs.selec_{id});
@@ -411,7 +510,7 @@ classdef CandidateSets < handle
                     else
                         switch (fieldname)
                             case CandidateSets.candidateSetFieldnames.representation
-                                lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(:, rhs.selec_{id});
+                                lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(rhs_selec_feature_, rhs.selec_{id});
                             case CandidateSets.candidateSetFieldnames.identifier
                                 lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(rhs.selec_{id});
                             case CandidateSets.candidateSetFieldnames.numberOfElements

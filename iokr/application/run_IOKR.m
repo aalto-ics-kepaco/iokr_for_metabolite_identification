@@ -26,23 +26,27 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
     rng (param.debug_param.randomSeed);
     
     n_folds = param.opt_param.nOuterFolds;
-    param.opt_param.nInnerFolds = 2;
+    param.opt_param.nInnerFolds = 10;
+    
+    param.iokr_param.model_representation = 'Chol_decomp_of_C';
    
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
-    param.ky_param.representation  = 'feature';
+    param.ky_param.representation  = 'kernel';
     param.ky_param.type            = 'gaussian';
-    param.ky_param.base_kernel     = 'linear';
+    param.ky_param.base_kernel     = 'tanimoto';
     param.ky_param.param_selection = 'entropy';
-    param.ky_param.rff_dimension   = 1000;
+    % param.ky_param.rff_dimension   = 1000;
 
     % inchi keys, molecular formulas, fingerprints
     load ([inputDir '/compound_info.mat'], 'dt_inchi_mf_fp');
-    inchi = dt_inchi_mf_fp.inchi_key_1; 
+    inchi = dt_inchi_mf_fp.inchi_key_1;
+    fp_mask = load_fingerprint_mask ([inputDir, '/fingerprints.mask']);
     
     % Extract fingerprints
-    Y = full (dt_inchi_mf_fp.fp_masked)';
+    Y = full (dt_inchi_mf_fp.fp_full)';
+%     Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
    
     % Cross-validation
@@ -51,14 +55,15 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
 
     % Candidates description
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
-    Y_C       = CandidateSets (DataHandle (cand), mf_corres);
+%     Y_C       = CandidateSets (DataHandle (cand), mf_corres, 'ALL', fp_mask);
+    Y_C       = CandidateSets (DataHandle (cand), mf_corres, 'ALL', 'ALL');
     assert (Y_C.getNumberOfExamples() == size (Y, 2))
     
     % Input kernels
-    kernel_files = dir ([inputDir '/kernels/*.txt']);
+    kernel_files = dir ([inputDir '/kernels/*.mat']);
     param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
-    KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'] , param, '.txt');
+    KX_list = loadInputKernelsIntoList ([inputDir, '/kernels/'] , param, '.mat');
     
     %--------------------------------------------------------------
     % Run Cross-validation

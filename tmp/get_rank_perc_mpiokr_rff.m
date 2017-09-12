@@ -1,6 +1,7 @@
-function add_results_to_db (resultDir)
+function rank_perc = get_rank_perc_mpiokr_rff (resultDir)
     files = dir ([resultDir, '/*.mat']); 
-    line_info = cell (1);
+    
+    rank_perc = NaN (13115, length (files));
     ii = 1;
     
 %     figure; hold on;
@@ -9,7 +10,7 @@ function add_results_to_db (resultDir)
         
         if (strcmp (res.result.param.ky_param.type, 'gaussian') && ...
                 strcmp (res.result.param.ky_param.base_kernel, 'linear') && ...
-                strcmp (res.result.param.iokr_param.mkl, 'unimkl'))
+                strcmp (res.result.param.mp_iokr_param.mkl, 'unimkl'))
             
             if (strcmp (res.result.param.ky_param.representation, 'feature'))
                 fprintf ('rff_dimension=%d: %.3f %.3f %.3f %.3f\n', ...
@@ -18,6 +19,7 @@ function add_results_to_db (resultDir)
                     res.result.rank_perc(5), ...
                     res.result.rank_perc(10), ...
                     res.result.rank_perc(20));
+                rank_perc(:, ii) = res.result.rank_perc;
                 
 %                  stairs (res.result.rank_perc(1:100))
 %                  line_info{ii} = sprintf ('rff_dimension=%d', res.result.param.ky_param.rff_dimension);
@@ -28,19 +30,16 @@ function add_results_to_db (resultDir)
                     res.result.rank_perc(10), ...
                     res.result.rank_perc(20));
                 
-                disp (file.name)
-                
                 
 %                  stairs (res.result.rank_perc(1:100))
 %                  line_info{ii} = 'gaussian';
             end % if
             
-%             ii = ii + 1;
+            ii = ii + 1;
         end % if
-        
 
+        
     end % for
     
 %     legend (line_info);
 end % function
-

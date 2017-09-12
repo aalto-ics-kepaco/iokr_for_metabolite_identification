@@ -1,3 +1,4 @@
+% bla
 function rank_perc = get_rank_perc_mpiokr_rff (resultDir)
     files = dir ([resultDir, '/*.mat']); 
     

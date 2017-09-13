@@ -45,8 +45,8 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
     fp_mask = load_fingerprint_mask ([inputDir, '/fingerprints.mask']);
     
     % Extract fingerprints
-    Y = full (dt_inchi_mf_fp.fp_full)';
-%     Y = full (dt_inchi_mf_fp.fp_masked)';
+%     Y = full (dt_inchi_mf_fp.fp_full)';
+    Y = full (dt_inchi_mf_fp.fp_masked)';
     [~,n] = size(Y);
    
     % Cross-validation
@@ -55,8 +55,8 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
 
     % Candidates description
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
-%     Y_C       = CandidateSets (DataHandle (cand), mf_corres, 'ALL', fp_mask);
-    Y_C       = CandidateSets (DataHandle (cand), mf_corres, 'ALL', 'ALL');
+    Y_C       = CandidateSets (DataHandle (cand), mf_corres, 'ALL', fp_mask);
+%     Y_C       = CandidateSets (DataHandle (cand), mf_corres, 'ALL', 'ALL');
     assert (Y_C.getNumberOfExamples() == size (Y, 2))
     
     % Input kernels
@@ -90,7 +90,7 @@ function [ ] = run_IOKR (inputDir, outputDir, cand)
         KX_list_test       = cellfun(@(x) x(test_set,test_set),  KX_list, 'UniformOutput', false);
         Y_C_test           = Y_C.getSubset (test_set);
 
-        scores = Test_IOKR (KX_list_train_test, KX_list_test, train_model, ...
+        [scores, ~, hh] = Test_IOKR (KX_list_train_test, KX_list_test, train_model, ...
             Y_train, Y_C_test, param.iokr_param.center);
 
         % Computation of the ranks

@@ -510,7 +510,7 @@ classdef CandidateSets < handle
                     else
                         switch (fieldname)
                             case CandidateSets.candidateSetFieldnames.representation
-                                lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(rhs_selec_feature_, rhs.selec_{id});
+                                lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(rhs.selec_feature_, rhs.selec_{id});
                             case CandidateSets.candidateSetFieldnames.identifier
                                 lhs = rhs.data_handle_.data_(rhs.lut_(id)).(fieldname)(rhs.selec_{id});
                             case CandidateSets.candidateSetFieldnames.numberOfElements

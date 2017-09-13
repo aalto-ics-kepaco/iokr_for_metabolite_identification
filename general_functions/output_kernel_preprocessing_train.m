@@ -16,13 +16,13 @@ function [ KY_train_cn, process_output ] = output_kernel_preprocessing_train( Y_
 %
 %======================================================
 
-    KY_train = build_kernel(Y_train, Y_train, KY_par);
+    KY_train = build_kernel (Y_train, Y_train, KY_par);
 
     % Centering and normalization of the output kernel
-    KY_train_c = center(KY_train, mean(KY_train,1), ker_center); % centering
-    KY_train_cn = normmat(KY_train_c); % normalization
+    KY_train_c = center (KY_train, mean (KY_train, 1), ker_center); % centering
+    KY_train_cn = normmat (KY_train_c); % normalization
     
-    process_output.mean = mean(KY_train,1);
-    process_output.diag_c = diag(KY_train_c);
+    process_output.mean   = mean (KY_train,1);
+    process_output.diag_c = diag (KY_train_c);
     
 end

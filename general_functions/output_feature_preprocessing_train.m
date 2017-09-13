@@ -16,9 +16,8 @@ function [ Psi_train, process_output ] = output_feature_preprocessing_train( Y_t
 %======================================================
 
     % Centering and normalization
-    Psi_train = norma(Y_train, mean(Y_train,2), ker_center);
+    Psi_train = norma (Y_train, mean (Y_train, 2), ker_center);
     
-    process_output.mean = mean(Y_train,2);
-
+    process_output.mean = mean (Y_train,2);
 end
 

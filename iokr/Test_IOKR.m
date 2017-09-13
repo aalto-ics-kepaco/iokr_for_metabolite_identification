@@ -1,4 +1,4 @@
-function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
+function [ score, process_output, varargout ] = Test_IOKR( KX_list_train_test, KX_list_test, ...
     train_model, Y_train, Y_C_test, ker_center )
 %======================================================
 % DESCRIPTION:
@@ -21,12 +21,14 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
 %                       candidate set
 %
 %======================================================
+    calculate_prediction_error = (nargout == 3);
 
     % Computation of the input kernel between training and test examples
     KX_train_test = input_kernel_preprocessing_test (KX_list_train_test, ...
         KX_list_test, train_model.process_input, ker_center);
     
     % Prediction on the test set 
+    % B = (lambda_opt * I + KX_train)^(-1) * KX_train_test
     switch train_model.model_representation
         case 'only_C'
             B = train_model.C \ KX_train_test;
@@ -34,6 +36,7 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
             y = linsolve (train_model.C,  KX_train_test, struct ('LT', true));
             B = linsolve (train_model.C', y,             struct ('UT', true));
     end % switch
+    
     % Pre-image
     
     % Preprocessing of the training outputs    
@@ -53,16 +56,25 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
             
             [Psi_train, process_output] = output_feature_preprocessing_train (Y_train, ker_center);
         case 'kernel'
-            [~,         process_output] = ...
-                output_kernel_preprocessing_train(Y_train, ...
+            [~, process_output] = output_kernel_preprocessing_train (Y_train, ...
                 train_model.KY_par, ker_center);
     end
-   
+    
+    if (calculate_prediction_error)
+        [KY_train, ~] = output_kernel_preprocessing_train (Y_train, ...
+                    train_model.KY_par, ker_center);
+    end % if
+
     % Scoring
     n_test = Y_C_test.getNumberOfExamples();
-    score = cell(n_test,1);
-    for j = 1:n_test    
-        if (isnan (Y_C_test.getCandidateSet (j, false, 'num')))
+    score = cell (n_test, 1);
+    if (calculate_prediction_error)
+        hh = NaN (n_test, 1);
+    end % if
+    for j = 1:n_test
+        % TODO: Handle the case that the candidate set is empty.
+        n_cand = Y_C_test.getCandidateSet (j, false, 'num');
+        if (isnan (n_cand))
             score{j} = NaN;
             
             continue;
@@ -95,8 +107,17 @@ function [ score, process_output ] = Test_IOKR( KX_list_train_test, KX_list_test
                     train_model.KY_par, process_output, ker_center);
 
                 score{j} = B(:,j)' * KY_train_Cj;
-        end
-    end
-end
+        end % switch
+        
+        if (calculate_prediction_error)
+            % Calculate: ||h(x_j) - psi(y_k)||^2, for all y_k in C(j)
+            hh(j) = B(:,j)' * KY_train * B(:,j);
+        end % if
+    end % for
+    
+    if (calculate_prediction_error)
+        varargout{1} = hh;
+    end % if
+end % function
 
 

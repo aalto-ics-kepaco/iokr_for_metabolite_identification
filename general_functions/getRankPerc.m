@@ -9,7 +9,17 @@ function rankPerc = getRankPerc (ranks, candNum)
     hasRank = (~ isnan (ranks));
     nValidRanks = sum (hasRank);
 
-    nel = hist (ranks(hasRank), 1:max(candNum(hasRank)));
+    if     numel (candNum) == numel (ranks)
+        maxCandNum = max(candNum(hasRank));
+    elseif numel (candNum) == 1
+        maxCandNum = candNum;
+    else
+        error ('getRankPerc:InvalidArgument', ...
+            '"candNum" must be of same length as "ranks" or one.');
+    end % if
+            
+    
+    nel = hist (ranks(hasRank), 1:maxCandNum);
     rankPerc = cumsum(nel)';
     rankPerc = rankPerc / nValidRanks * 100;
 end % function

@@ -1,4 +1,4 @@
-function ranks = getRanksBasedOnScores (Y_C, inchis, scores, eval_set)
+function ranks = getRanksBasedOnScores (Y_C, ids, scores, eval_set)
 %% GETRANKSBASEDONSCORES calculates the pr-image rank for each example 
 %    This function used the prediced scores for each candidate given a
 %    certain test-example. The canidates are sorted according to their
@@ -28,9 +28,9 @@ function ranks = getRanksBasedOnScores (Y_C, inchis, scores, eval_set)
         % Get the inchis of all the candidate in the set for test
         % example j
         inchis_c = Y_C.getCandidateSet (j, false, 'id');
-        assert (any (Y_C.findExampleInCandidateSet (j, inchis{j})), ...
+        assert (any (Y_C.findExampleInCandidateSet (j, ids{j})), ...
             'True candidate is not in the candidate set.');
         
-        ranks(j) = find (strcmp (inchis_c(IX), inchis{j}));
+        ranks(j) = find (strcmp (inchis_c(IX), ids{j}));
     end % for
 end % function

@@ -104,7 +104,6 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, .
             KY_par_opt = ky_param_all_comb(ind_KY_param_opt);
             w_opt = w{ind_KY_param_opt};
     end
-
 end
 
 

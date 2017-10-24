@@ -1,4 +1,5 @@
-function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, mpiokr_param, challenge_param)
+function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, ...
+    mpiokr_param, challenge_param, use_trained_model)
 %======================================================
 % DESCRIPTION:
 % Script for running MP-IOKR on a small test-dataset containing ~260
@@ -16,10 +17,14 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
 %
 %======================================================
 
+    if (nargin < 6)
+        use_trained_model = false;
+    end % if
+
     %--------------------------------------------------------------
     % Set up parameters
     %--------------------------------------------------------------
-    %param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
+%     param = MP_IOKR_Defaults.setDefaultsIfNeeded (struct(), ...
     %    {'debug_param', 'opt_param', 'mp_iokr_param', 'data_param', 'ky_param'});
       
 %     param.opt_param.nInnerFolds = 2;
@@ -45,7 +50,7 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
         case 'full'
             fp_mask = 'ALL';
         case 'masked'
-            fp_mask_fn = [input_dir_training, '/fingerprints/', challenge_param.ion_mod, '/fingerprints.mask'];
+            fp_mask_fn = [input_dir_training, '/fingerprints/', challenge_param.ion_mode, '/fingerprints.mask'];
             fp_mask = load_fingerprint_mask (fp_mask_fn);
     end % switch
     
@@ -67,30 +72,39 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
     mpiokr_param.data_param.availInputKernels = arrayfun (@(file) basename (file.name), ...
         kernel_files, 'UniformOutput', false);
     mpiokr_param.data_param.inputKernel = '__ALL__';
-    KX_list_train = loadInputKernelsIntoList (kernel_dir, mpiokr_param, '.mat');
+    if (~ use_trained_model)
+        KX_list_train = loadInputKernelsIntoList (kernel_dir, mpiokr_param, '.mat');
+    end % if
     
     %--------------------------------------------------------------
     % Train the model using all the training data
     %--------------------------------------------------------------
     % Initiate the output kernel approximation in case
-    if (strcmp (mpiokr_param.ky_param.type, 'gaussian')) && (strcmp (mpiokr_param.ky_param.representation, 'feature'))
-        % RANDOM FOURIER FEATURES
-        assert (ismember ('rff_dimension', fieldnames (mpiokr_param.ky_param)), ...
-            'The random fourier feature dimension must be specified.');
+    if (~ use_trained_model)
+        if (strcmp (mpiokr_param.ky_param.type, 'gaussian')) && (strcmp (mpiokr_param.ky_param.representation, 'feature'))
+            % RANDOM FOURIER FEATURES
+            assert (ismember ('rff_dimension', fieldnames (mpiokr_param.ky_param)), ...
+                'The random fourier feature dimension must be specified.');
+
+            mpiokr_param.ky_param.rff = RandomFourierFeatures (size (Y_train, 1), mpiokr_param.ky_param.rff_dimension);
+        end % if
         
-        mpiokr_param.ky_param.rff = RandomFourierFeatures (size (Y_train, 1), mpiokr_param.ky_param.rff_dimension);
+        train_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
+            mpiokr_param.ky_param, mpiokr_param.mp_iokr_param, mpiokr_param.opt_param, mpiokr_param.debug_param);
     end % if
     
-    train_model = Train_MPIOKR (KX_list_train, Y_train, Y_C_train, ...
-            mpiokr_param.ky_param, mpiokr_param.mp_iokr_param, mpiokr_param.opt_param, mpiokr_param.debug_param);
-    
-    filename = [output_dir, '/', challenge_param.ion_mode, '/train_model_mpiokr_mkl=', iokr_param.iokr_param.mkl, ...
+    filename = [output_dir, '/', challenge_param.ion_mode, '/train_model_mpiokr_mkl=', mpiokr_param.mp_iokr_param.mkl, ...
        '_kernel=', mpiokr_param.ky_param.type, '_representation=', mpiokr_param.ky_param.representation, ...
        '_base=', mpiokr_param.ky_param.base_kernel, '_', mpiokr_param.ky_param.param_selection, ...
        '_strategy=', mpiokr_param.data_param.selection_param.strategy, ...
        '_ion_mode=', challenge_param.ion_mode, ...
        '_fp_set=', challenge_param.fp_set, '.mat'];
-    save (filename, 'train_model', '-v7.3');
+    
+    if (use_trained_model)
+        load (filename);
+    else
+        save (filename, 'train_model', '-v7.3');
+    end % if
         
     %--------------------------------------------------------------
     % Get the scoring for each challenge
@@ -122,11 +136,11 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
         for mf_cand_id = 1:1
             % Load the train vs. test and test vs. test kernels
             challenge_KX_train_test_fn = dir (sprintf ( ...
-                '%s/kernels_training_test/challenge-%03d-msms.mgf_01_*.kernels', ...
-                input_dir_test, challenge_idx));
+                '%s/%s/kernels_training_test/challenge-%03d-msms.mgf_%02d_*.kernels', ...
+                input_dir_test, challenge_param.ion_mode, challenge_idx, mf_cand_id));
             challenge_KX_test_fn       = dir (sprintf ( ...
-                '%s/kernels_test_test/challenge-%03d-msms.mgf_01_*.test_kernels', ...
-                input_dir_test, challenge_idx));
+                '%s/%s/kernels_test_test/challenge-%03d-msms.mgf_%02d_*.test_kernels', ...
+                input_dir_test, challenge_param.ion_mode, challenge_idx, mf_cand_id));
             
             if (isempty (challenge_KX_train_test_fn))
                 break;
@@ -139,12 +153,12 @@ function run_MP_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, 
             fprintf ('Filename KX_test: %s\n',       challenge_KX_test_fn)         
             
             [KX_list_train_test, KX_names] = read_challenge_kernel ( ...
-            [input_dir_test, '/kernels_training_test/', challenge_KX_train_test_fn]);
+                [input_dir_test, '/', challenge_param.ion_mode, '/kernels_training_test/', challenge_KX_train_test_fn]);
             [~, locb]                      = ismember (upper (KX_names), mpiokr_param.data_param.availInputKernels);
             KX_list_train_test             = KX_list_train_test(locb);
         
             [KX_list_test, KX_names] = read_challenge_kernel ( ...
-            [input_dir_test, '/kernels_test_test/', challenge_KX_test_fn]);
+                [input_dir_test, '/', challenge_param.ion_mode, '/kernels_test_test/', challenge_KX_test_fn]);
             [~, locb]                = ismember (upper (KX_names), mpiokr_param.data_param.availInputKernels);
             KX_list_test             = KX_list_test(locb);
             

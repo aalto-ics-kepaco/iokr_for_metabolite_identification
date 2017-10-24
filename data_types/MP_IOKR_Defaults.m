@@ -41,15 +41,15 @@ classdef MP_IOKR_Defaults
         
         % Output kernel parameters
         ky_param = struct ( ...    
-            'representation',  'feature', ...
-            'type',            'linear',  ...
-            'base_kernel',     'linear',  ...
-            'param_selection', 'cv',      ...
+            'representation',  'kernel',   ...
+            'type',            'gaussian', ...
+            'base_kernel',     'tanimoto', ...
+            'param_selection', 'entropy',  ...
             'rff_dimension',   -1);
         
         % Data parameter
-        % FIXME: 'availInputKernels' is specific to the metabolite
-        % identification.
+        % TODO: Parameter regarding the candidate selection should go to
+        %       the 'mp_iokr_param'.
         data_param = struct (                                                              ...
             'usePreCalcStat',       false,                                                 ...
             'inputKernel',          '__ALL__',                                             ...
@@ -93,5 +93,44 @@ classdef MP_IOKR_Defaults
                 end % if
             end % for
         end % function 
+        
+        function str = param2str (param, simple)
+        %% PARAM2STR Returns a string containing the parameter setting
+            if (nargin < 1)
+                error ('MP_IOKR_Defaults:param2str:InvalidInput', ...
+                    'Not enough input arguments.');
+            end % if
+            if (nargin < 2)
+                simple = true;
+            end % if
+            
+            if simple 
+                % data_param
+                if (strcmp (param.data_param.inputKernel, '__ALL__'))
+                    n_kernel = length (param.data_param.availInputKernels);
+                else
+                    n_kernel = 1;
+                end % if
+                str = sprintf ('input-kernel=%s_n-kernels=%d', param.data_param.inputKernel, n_kernel);
+                
+                % iokr_param / mp_iokr_param
+                if     (ismember ('iokr_param', fieldnames (param)))
+                    center               = num2str (param.iokr_param.center);
+                    mkl                  = param.iokr_param.mkl;
+                    model_representation = param.iokr_param.model_representation;
+                elseif (ismember ('mp_iokr_param', fieldnames (param)))
+                    center               = param.mp_iokr_param.center;
+                    mkl                  = param.mp_iokr_param.mkl;
+                    model_representation = param.mp_iokr_param.model_representation;
+                end % if
+                str = strcat (str, sprintf ('_center=%s_mkl=%s_model-representation=%s', ...
+                        center, mkl, model_representation));
+                
+                % ky_param
+                str = strcat (str, sprintf ('_type=%s_base-kernel=%s', ...
+                    param.ky_param.type, param.ky_param.base_kernel));
+            else
+            end % if
+        end % function
     end % methods
 end % class

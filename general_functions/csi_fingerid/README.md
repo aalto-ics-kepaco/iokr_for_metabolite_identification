@@ -19,7 +19,11 @@ Main steps done in this script:
     * This file contains the information about each spectra / compound in the 
       training set: 
 
+| Column name | Description | 
+| ---- | ---- |
 | mol_id | basename of the spectrum-file, considered as kind of compund id | 
+
+
 
 
 ## Prepare the fingerprints

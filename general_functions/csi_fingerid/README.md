@@ -37,8 +37,9 @@ Main steps done in this script:
       the entropy criteria
     * Input-kernels are combined using ALIGNF
 4. Write out the model in binary format (```write_out_iokr_model_as_binary_files.m```)
-    * For each input kernel: Vector of column means: ```KX_mean_*```
-    * 
+    * All data is stored as double-precission binary (16byte, double) in little-ending
+        * For each input kernel: Vector of column means: ```KX_mean_*.bin```
+        * For each input kernel:
 
 
 

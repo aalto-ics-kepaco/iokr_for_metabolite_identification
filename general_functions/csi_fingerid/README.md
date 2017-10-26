@@ -15,9 +15,8 @@ the reclassficiation performance, i.e. predicted ranks and top-k accuarcy.
 
 Main steps done in this script:
 
-1. Load the ```compound_info.mat``` (from ```spectra```)
-    * This file contains the information about each spectra / compound in the 
-      training set: 
+1. Load ```spectra/compound_info.mat```. This file contains the information about 
+   each spectra / compound in the training set: 
 
 | Column name | Description | 
 | ---- | ---- |
@@ -27,7 +26,19 @@ Main steps done in this script:
 | molecular_formula | molecular formula used to choose the candidate set | 
 | fp_full | full fingerprint (type: sparse) | 
 | fp_masked | fingerprint (type: sparse) masked using ```fingerprints/fingerprints.mask```| 
-| ---- | ---- |
+
+2. Load ```kernels/kernels.mat```
+    * All kernels stored in ```kernels``` are used for training.
+    * The kernels must have the file-extension '.txt', i.e. ```PPKr.txt```
+    * If the kernels have not been yet converted into mat-files, it will be done
+      automatically.
+3. Train the model
+    * Output-kernel parameters: Tanimoto-Gaussian Kernel, gamma selected using
+      the entropy criteria
+    * Input-kernels are combined using ALIGNF
+4. Write out the model in binary format
+    * 
+
 
 
 

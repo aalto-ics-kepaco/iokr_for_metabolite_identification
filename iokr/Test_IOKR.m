@@ -58,7 +58,7 @@ function [ score, process_output, varargout ] = Test_IOKR( KX_list_train_test, K
         case 'kernel'
             [~, process_output] = output_kernel_preprocessing_train (Y_train, ...
                 train_model.KY_par, ker_center);
-    end
+    end % switch
     
     if (calculate_prediction_error)
         [KY_train, ~] = output_kernel_preprocessing_train (Y_train, ...

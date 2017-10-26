@@ -38,9 +38,6 @@ function [ KX_train, process_input ] = input_kernel_preprocessing_train( KX_list
         process_input(i).mean = mean(KX_i,1);
         process_input(i).diag_c = diag(KX_i_c);
         
-    end
-    
-    disp ('')
-    
-end
+    end % for
+end % function
 

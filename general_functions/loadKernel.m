@@ -62,9 +62,9 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
                     'Cannot open kernel-matrix file: %s.\n', filepath);
             end %if
 
-            firstLine    = fgetl (fid);
-            firstLine    = strsplit (firstLine);
-            hasHeader    = strcmp (firstLine(1), '#');
+            firstLine = fgetl (fid);
+            firstLine = strsplit (firstLine);
+            hasHeader = strcmp (firstLine(1), '#');
             
             % Load the header if requested
             if (nargout > 1)          

@@ -130,6 +130,7 @@ classdef MP_IOKR_Defaults
                 str = strcat (str, sprintf ('_type=%s_base-kernel=%s', ...
                     param.ky_param.type, param.ky_param.base_kernel));
             else
+                error ('Not implemented yet')
             end % if
         end % function
     end % methods

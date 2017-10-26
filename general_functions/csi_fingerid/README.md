@@ -36,7 +36,8 @@ Main steps done in this script:
     * Output-kernel parameters: Tanimoto-Gaussian Kernel, gamma selected using
       the entropy criteria
     * Input-kernels are combined using ALIGNF
-4. Write out the model in binary format
+4. Write out the model in binary format (```write_out_iokr_model_as_binary_files.m```)
+    * For each input kernel: Vector of column means: ```KX_mean_*```
     * 
 
 

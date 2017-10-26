@@ -42,7 +42,7 @@ Main steps done in this script:
         * Vector of column means: ```KX_mean_*.bin```
         * Kernel diagonal (centered): ```KX_diag_c_*.bin```
         * MKL-weight: ```mkl_w_*.bin```
-    * Cholesky decomposition of (lambda_opt * I + KX_train) in lower-triangular matrix
+    * Cholesky decomposition of __(lambda_opt * I + KX_train)__ in lower-triangular matrix
         * Vector contains *only* the elements of the lower-triangular (+ diagonal) 
           matrix.
         * The values are extracted row-wise.

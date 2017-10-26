@@ -15,7 +15,7 @@ the reclassficiation performance, i.e. predicted ranks and top-k accuarcy.
 
 Main steps done in this script:
 
-1) Load the ```compound_info.mat```
+1. Load the ```compound_info.mat```
     * sad
 
 ## Prepare the fingerprints

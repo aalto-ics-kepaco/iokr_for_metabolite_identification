@@ -81,7 +81,6 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, .
             mse = zeros(length(ky_param_all_comb), length(val_lambda));
             w = cell(length(ky_param_all_comb), 1);
             for ip = 1:length(ky_param_all_comb)
-
                 % Multiple kernel learning
                 KY_train = build_kernel(Y_train, Y_train, ky_param_all_comb(ip));
                 w{ip} = mkl_weight(iokr_param.mkl, KX_list_train, normmat(KY_train));

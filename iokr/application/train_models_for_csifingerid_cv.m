@@ -1,4 +1,4 @@
-function train_models_for_csifingerid (wdir)
+function train_models_for_csifingerid_cv (wdir)
 %======================================================
 % DESCRIPTION:
 % Script for running IOKR
@@ -54,6 +54,8 @@ function train_models_for_csifingerid (wdir)
         end % for
     end % for  
     KX_list = loadInputKernelsIntoList ([wdir '/kernels/'], param, '.mat');
+    
+    % Pre-defined cross-validation folds
     
     %--------------------------------------------------------------
     % Model training using cross-validation

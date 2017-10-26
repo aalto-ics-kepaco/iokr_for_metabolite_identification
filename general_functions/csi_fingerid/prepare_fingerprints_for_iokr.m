@@ -3,7 +3,7 @@ function prepare_fingerprints_for_iokr (wdir)
 %   Csi-fingerid stores the fingerprints for each compound in a separate
 %   file. This script reads all files in the provided directory. The
 %   fingerprints are stored in a DataTable with 3 columns:
-%       'mol_id': String based on the filename
+%       'mol_id': String based of the filename
 %       'fp_full': Sparse vector of all fingerprints
 %       'fp_masked': Sparse vector of the masked fingerprints
 

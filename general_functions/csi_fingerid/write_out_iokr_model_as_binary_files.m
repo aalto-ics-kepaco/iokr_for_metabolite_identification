@@ -1,22 +1,20 @@
-function write_out_iokr_model_as_binary_files (train_model, kernel_names, odir)
-    assert (length (train_model.process_input) == length (kernel_names))
-
+function write_out_iokr_model_as_binary_files (train_model, odir)
     %% Process (input) row-means ,diag_c and mkl-weights
-    for i_kernel__ = 1:length (kernel_names)
+    for i_kernel__ = 1:length (train_model.kernel_names)
         fid__ = fopen ( ...
-            [odir, '/KX_mean_', basename(kernel_names{i_kernel__}), '.bin'], 'w');
+            [odir, '/KX_mean_', basename(train_model.kernel_names{i_kernel__}), '.bin'], 'w');
         assert (fid__ > 0);
         fwrite (fid__, train_model.process_input(i_kernel__).mean, 'double', 'ieee-le');
         fclose (fid__);
 
         fid__ = fopen ( ...
-            [odir, '/KX_diag_c_', basename(kernel_names{i_kernel__}), '.bin'], 'w');
+            [odir, '/KX_diag_c_', basename(train_model.kernel_names{i_kernel__}), '.bin'], 'w');
         assert (fid__ > 0);
         fwrite (fid__, train_model.process_input(i_kernel__).diag_c, 'double', 'ieee-le');
         fclose (fid__);
 
         fid__ = fopen ( ...
-            [odir, '/mkl_w_', basename(kernel_names{i_kernel__}), '.bin'], 'w');
+            [odir, '/mkl_w_', basename(train_model.kernel_names{i_kernel__}), '.bin'], 'w');
         assert (fid__ > 0);
         fwrite (fid__, train_model.process_input(i_kernel__).w, 'double', 'ieee-le');
         fclose (fid__);    

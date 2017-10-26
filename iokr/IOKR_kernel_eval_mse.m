@@ -64,7 +64,8 @@ function [ mse ] = IOKR_kernel_eval_mse( KX_train, KY_train, opt_param )
 
             mse = zeros(1, length(val_lambda));
             for il = 1:length(val_lambda)
-
+                disp (il);
+                
                 B = (val_lambda(il)*eye(n_train) + KX_train) \ KX_train;
 
                 % Computation of the mean squared error

@@ -18,6 +18,7 @@ Main steps done in this script:
 1. Load the ```compound_info.mat``` (from ```spectra```)
     * This file contains the information about each spectra / compound in the 
       training set: 
+
 | mol_id | basename of the spectrum-file, considered as kind of compund id | 
 
 

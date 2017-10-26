@@ -21,8 +21,13 @@ Main steps done in this script:
 
 | Column name | Description | 
 | ---- | ---- |
-| mol_id | basename of the spectrum-file, considered as kind of compund id | 
-
+| mol_id | basename of the spectrum-file, considered as compund id | 
+| inchi_key_1 | first 14 characters (2D information) if the InChI-key | 
+| inchi | 2D-InChI | 
+| molecular_formula | molecular formula used to choose the candidate set | 
+| fp_full | full fingerprint (type: sparse) | 
+| fp_masked | fingerprint (type: sparse) masked using ```fingerprints/fingerprints.mask```| 
+| ---- | ---- |
 
 
 

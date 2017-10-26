@@ -56,7 +56,7 @@ function train_models_for_csifingerid (wdir)
     KX_list = loadInputKernelsIntoList ([wdir '/kernels/'], param, '.mat');
     
     %--------------------------------------------------------------
-    % Model training using cross-validation
+    % Model parameter estimation using nested cross-validation
     %--------------------------------------------------------------
     disp ('Model training')
     
@@ -123,33 +123,4 @@ function train_models_for_csifingerid (wdir)
     
     filename = [outputDir 'rank_perc_100', MP_IOKR_Defaults.param2str(param), '.txt'];
     save (filename,'rank_perc_100','-ascii');    
-end
-
-
-%     filename = [outputDir 'scores_reclass_mkl=' iokr_param.mkl ...
-%         '_kernel=' ky_param.type ...
-%         '_base=' ky_param.base_kernel '_' ky_param.param_selection ...
-%         '_model_representation=', iokr_param.model_representation, '.mat'];
-%     save (filename,'scores','-v7.3');
-% 
-%     
-%     rank = NaN(n,1);
-%     cand_num = zeros(n,1); % vector containing the number of candidates for each test example
-%     for j = 1:n
-%         inchi_c = cand(mf_corres(j)).id;
-%         [~,IX] = sort(score{j},'descend');
-% 
-%         rank(j) = find(strcmp(inchi_c(IX), inchi{j}));
-%         cand_num(j) = length(score{j});
-%     end
-%         
-%     % Computation of the percentage of identified metabolites in the top k
-%     nel = hist(rank, 1:max(cand_num));
-%     rank_perc = cumsum(nel)';
-%     rank_perc = rank_perc/n*100;
-%     rank_perc_100 = rank_perc(1:100);
-
-% filename = [outputDir '/model_reclass_mkl=' iokr_param.mkl ...
-%         '_kernel=' ky_param.type ...
-%         '_base=' ky_param.base_kernel '_' ky_param.param_selection ...
-%         '_model_representation=', iokr_param.model_representation, '.mat'];
+end % function

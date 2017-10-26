@@ -56,41 +56,54 @@ function train_models_for_csifingerid_cv (wdir)
     KX_list = loadInputKernelsIntoList ([wdir '/kernels/'], param, '.mat');
     
     % Pre-defined cross-validation folds
+    dt_cv_folds = readtable ([wdir, '/crossvalidation_folds.txt'], ...
+        'Delimiter', '\t', 'ReadVariableNames', false);
+    dt_cv_folds.Properties.VariableNames = {'mol_id', 'inchi_key_1', 'cv'};
+    dt_inchi_mf_fp = join (dt_inchi_mf_fp, dt_cv_folds, 'Keys', 'mol_id');
     
     %--------------------------------------------------------------
-    % Model training using cross-validation
+    % Model parameter estimation using nested cross-validation
     %--------------------------------------------------------------
     disp ('Model training')
     
-    filename = [outputDir, 'model_', MP_IOKR_Defaults.param2str(param), '.mat'];
-    if (exist (filename, 'file'))
-        load (filename, 'train_model');
-    else
-        train_model = Train_IOKR (KX_list, Y, ...
-        param.ky_param, param.opt_param, param.iokr_param);
-    
-        switch train_model.KY_par.representation
-            case 'feature'
-                [~, process_output] = output_feature_preprocessing_train (Y, ...
-                    train_model.ker_center);
-            case 'kernel'
-                [~, process_output] = output_kernel_preprocessing_train (Y, ...
-                    train_model.KY_par, train_model.ker_center);
-        end % switch 
-        train_model.process_output = process_output;
-        train_model.kernel_names = param.data_param.availInputKernels;
+    n_folds = max (dt_inchi_mf_fp.cv);
+    for cv_idx = 1:n_folds
+        filename = [outputDir, 'model_', MP_IOKR_Defaults.param2str(param), ...
+            '_cv=', num2str(cv_idx), '.mat'];
         
-        save (filename, 'train_model', '-v7.3');
-    end % if
-    
+        if (~ exist (filename, 'file'))
+            train_set = find (dt_inchi_mf_fp.cv ~= cv_idx);
+            
+            KX_list_train = cellfun(@(x) x(train_set, train_set), KX_list, ...
+                'UniformOutput', false);
+            Y_train = Y(:, train_set);
+            
+            train_model = Train_IOKR (KX_list_train, Y_train, ...
+                param.ky_param, param.opt_param, param.iokr_param);
+
+            switch train_model.KY_par.representation
+                case 'feature'
+                    [~, process_output] = output_feature_preprocessing_train (Y_train, ...
+                        train_model.ker_center);
+                case 'kernel'
+                    [~, process_output] = output_kernel_preprocessing_train (Y_train, ...
+                        train_model.KY_par, train_model.ker_center);
+            end % switch 
+            train_model.process_output = process_output;
+            train_model.kernel_names = param.data_param.availInputKernels;
+
+            save (filename, 'train_model', '-v7.3');
+            
     %--------------------------------------------------------------
     % Save the model: As binary for csi-fingerid 
     %--------------------------------------------------------------
-    if (~ exist ([outputDir, '/binary/'], 'dir'))
-        mkdir ([outputDir, '/binary/']);
-    end % if
-    
-    write_out_iokr_model_as_binary_files (train_model, [outputDir, '/binary/']);
+            outputDir_binary = [outputDir, '/binary/cv=', num2str(cv_idx)];
+            if (~ exist (outputDir_binary, 'dir'))
+                mkdir (outputDir_binary);
+            end % if
+            write_out_iokr_model_as_binary_files (train_model, outputDir_binary);
+        end % if
+    end % for
     
     %--------------------------------------------------------------
     % Prediction & scoring 
@@ -100,9 +113,25 @@ function train_models_for_csifingerid_cv (wdir)
     
     mf_corres = get_mf_corres (dt_inchi_mf_fp.molecular_formula, cand);
     load ([wdir, '/cand.mat'], 'cand');
-    
     Y_C = CandidateSets (DataHandle (cand), mf_corres, 'ALL', fp_mask);
-    scores = Test_IOKR (KX_list, KX_list, train_model, Y, Y_C, train_model.center);
+    
+    scores = cell (Y_C.getNumberOfExamples(), 1);
+    for cv_idx = 1:n_folds
+        test_set = find (dt_inchi_mf_fp.cv == cv_idx);
+        train_set = find (dt_inchi_mf_fp.cv ~= cv_idx);
+        
+        KX_list_train_test = cellfun(@(x) x(train_set, test_set), KX_list, ...
+            'UniformOutput', false);
+        KX_list_test = cellfun(@(x) x(test_set, test_set), KX_list, ...
+            'UniformOutput', false);
+        Y_train = Y(: ,train_set);
+        Y_C_test = Y_C.getSubset (test_set);
+        
+        load ([outputDir, 'model_', MP_IOKR_Defaults.param2str(param), ...
+            '_cv=', num2str(cv_idx), '.mat'], 'train_model');
+        scores(test_set) = Test_IOKR (KX_list_train_test, KX_list_test, train_model, ...
+            Y_train, Y_C_test, train_model.center);    
+    end % for
     
     %--------------------------------------------------------------
     % Computation of the ranks
@@ -120,38 +149,9 @@ function train_models_for_csifingerid_cv (wdir)
     %--------------------------------------------------------------
     cmp = dt_inchi_mf_fp.mol_id;
     ranks_t = table (cmp, ranks);
-    filename = [outputDir 'ranks_', MP_IOKR_Defaults.param2str(param), '.csv'];
+    filename = [outputDir 'ranks_cv_', MP_IOKR_Defaults.param2str(param), '.csv'];
     writetable (ranks_t, filename);
     
-    filename = [outputDir 'rank_perc_100', MP_IOKR_Defaults.param2str(param), '.txt'];
+    filename = [outputDir 'rank_perc_100_cv', MP_IOKR_Defaults.param2str(param), '.txt'];
     save (filename,'rank_perc_100','-ascii');    
-end
-
-
-%     filename = [outputDir 'scores_reclass_mkl=' iokr_param.mkl ...
-%         '_kernel=' ky_param.type ...
-%         '_base=' ky_param.base_kernel '_' ky_param.param_selection ...
-%         '_model_representation=', iokr_param.model_representation, '.mat'];
-%     save (filename,'scores','-v7.3');
-% 
-%     
-%     rank = NaN(n,1);
-%     cand_num = zeros(n,1); % vector containing the number of candidates for each test example
-%     for j = 1:n
-%         inchi_c = cand(mf_corres(j)).id;
-%         [~,IX] = sort(score{j},'descend');
-% 
-%         rank(j) = find(strcmp(inchi_c(IX), inchi{j}));
-%         cand_num(j) = length(score{j});
-%     end
-%         
-%     % Computation of the percentage of identified metabolites in the top k
-%     nel = hist(rank, 1:max(cand_num));
-%     rank_perc = cumsum(nel)';
-%     rank_perc = rank_perc/n*100;
-%     rank_perc_100 = rank_perc(1:100);
-
-% filename = [outputDir '/model_reclass_mkl=' iokr_param.mkl ...
-%         '_kernel=' ky_param.type ...
-%         '_base=' ky_param.base_kernel '_' ky_param.param_selection ...
-%         '_model_representation=', iokr_param.model_representation, '.mat'];
+end % function 

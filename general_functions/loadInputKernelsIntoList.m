@@ -4,8 +4,8 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExten
         fileExtension = '.mat';
     end % if
 
-    switch (upper (param.data_param.inputKernel))
-        case upper (param.data_param.availInputKernels)
+    switch (param.data_param.inputKernel)
+        case param.data_param.availInputKernels
             disp (['Evaluation using a single kernel: ', param.data_param.inputKernel]);
 
             KX_list = { loadKernel(strcat (inputDir, '/', upper (param.data_param.inputKernel), fileExtension)) };
@@ -19,7 +19,7 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExten
             disp (['Evaluation using multiple kernel learning. Used kernels: ', param.data_param.inputKernel]);
 
             KX_list = cellfun (@(kernelName) loadKernel (strcat (inputDir, '/', kernelName, fileExtension)), ...
-                upper (param.data_param.availInputKernels), 'UniformOutput', false);
+                param.data_param.availInputKernels, 'UniformOutput', false);
         otherwise
             error ('IOKR_MP_reverse_feat_evaluation:InvalidInput', ...
                 '%s: Not a valid input kernel. See MP_IOKR_DEFAULTS for a list of available kernels.', ...

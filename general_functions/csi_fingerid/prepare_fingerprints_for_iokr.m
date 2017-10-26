@@ -7,7 +7,7 @@ function prepare_fingerprints_for_iokr (wdir)
 %       'fp_full': Sparse vector of all fingerprints
 %       'fp_masked': Sparse vector of the masked fingerprints
 
-    fp_files = dir ([wdir, 'fingerprints/*.fpt']);
+    fp_files = dir ([wdir, '/fingerprints/*.fpt']);
 
     fp_mask_bin = load_fingerprint_mask ([wdir, '/fingerprints/fingerprints.mask']);
 
@@ -27,8 +27,8 @@ function prepare_fingerprints_for_iokr (wdir)
         fp_masked = fp (fp_mask_bin);
 
         % Add fingerprint to table
-        mol_id = strsplit (fp_file.name, '.');
-        dt_fp = [dt_fp; {mol_id(1), fp, fp_masked}];
+        mol_id = basename (fp_file.name);
+        dt_fp = [dt_fp; {mol_id, fp, fp_masked}];
 
         % Close file
         fclose (file_id);

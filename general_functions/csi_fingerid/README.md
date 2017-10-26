@@ -14,6 +14,7 @@ This script can be used to train an IOKR model using *all* training data and get
 the reclassficiation performance, i.e. predicted ranks and top-k accuarcy.
 
 Main steps done in this script:
+
 1) Load the ```compound_info.mat```
     * sad
 

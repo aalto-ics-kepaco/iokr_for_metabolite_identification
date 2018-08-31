@@ -10,6 +10,10 @@ function [ K_c ] = center( K, mean_K_train, center_opt, mean_K_1_train, mean_K_t
 %  center:          binary value indicating if K has to be centered or not
 %  mean_K_1_train:  Gram matrix of size n1*n_train between X1 and X_train
 %  mean_K_train_2:  Gram matrix of size n_train*n2 between X_train and X2
+%  is_diagonal_K:   logical, if true than K is expected to be the diagonal
+%                   of a kernel matrix. This can be usefull if only the
+%                   normalizing constants for the kernel normalization
+%                   needs to be computed.
 %
 % OUTPUT:
 %  K_c:             centered Gram matrix of size n1 * n2

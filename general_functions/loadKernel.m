@@ -43,7 +43,7 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
     tic;
     if (~ exist (filepath, 'file'))
         error ('loadKernel:InvalidInput', ...
-            'Kernel-matrix file: %s does not exist.\n', filepath);
+            'Kernel-matrix file: %s does not exist.', filepath);
     end % if
     
     if (nargin < 2) ; loadHeaderOnly = false; end % if
@@ -59,12 +59,13 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
             fid = fopen (filepath, 'r');
             if (~ fid)
                 error ('loadKernel:InvalidInput', ...
-                    'Cannot open kernel-matrix file: %s.\n', filepath);
+                    'Cannot open kernel-matrix file: %s.', filepath);
             end %if
 
             firstLine = fgetl (fid);
             firstLine = strsplit (firstLine);
             hasHeader = strcmp (firstLine(1), '#');
+            fclose (fid);
             
             % Load the header if requested
             if (nargout > 1)          
@@ -74,8 +75,6 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
                     warning ('Header requested but not provided. An empty header will be returned.');
                 end % if
             end % if        
-            
-            fclose (fid);
                 
             % Read kernel-matrix as table, e.g the output of Kai's tool
             if (loadHeaderOnly)
@@ -103,12 +102,12 @@ function [KX, header] = loadKernel (filepath, loadHeaderOnly)
                 load (filepath, 'KX');
                 if (~ exist ('KX', 'var'))
                     error ('loadKernel:InvalidInput', ...
-                        'No kernel-matrix in the .mat-file. Please store the kernel-matrix using "KX" as variable name.\n');
+                        'No kernel-matrix in the .mat-file. Please store the kernel-matrix using "KX" as variable name.');
                 end % if
             end % if
         otherwise
             error ('loadKernel:InvalidInput', ...
-                'The kernel-matrix files is not valid. Only .txt and .mat are allowed.\n');
+                'The kernel-matrix file is not valid. Only .txt and .mat are allowed.');
     end % switch
       
     fprintf ('Loading the kernel-matrix took %.3fs.\n', toc);

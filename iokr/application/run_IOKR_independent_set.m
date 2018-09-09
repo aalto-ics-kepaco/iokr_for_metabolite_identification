@@ -31,9 +31,14 @@ function run_IOKR_independent_set(input_dir_training, input_dir_indep, output_di
         cmps_used_for_training = true(size(cmps_train, 1), 1);
     end % if
     
-    % Load kernels
+    % Load training kernels
     kernel_dir = strcat(input_dir_training, '/kernels/');
-    kernel_files = dir(kernel_dir + '/*.mat');
+    kernel_files = dir(kernel_dir + '/*.txt');
+    iokr_param.data_param.availInputKernels = arrayfun(@(file) basename(file.name), ...
+        kernel_files, 'UniformOutput', false);
+    iokr_param.data_param.inputKernel = '__ALL__';
+    KX_list_train = loadInputKernelsIntoList (kernel_dir, iokr_param, '.txt');
      
+    % Load training fingerprints
 end % function
 

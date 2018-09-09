@@ -167,7 +167,7 @@ classdef CandidateSetsFile < handle
             end % if
             
             cand_fid = fopen(cand_fn, 'r');
-            if (~ cand_fid)
+            if (cand_fid == -1)
                 error('CandidateSet:getCandidateSet:IOError', 'Cannot open "%s",', cand_fn);
             end % if
             

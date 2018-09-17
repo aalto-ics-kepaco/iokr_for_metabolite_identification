@@ -2,7 +2,7 @@ function cmps = loadCompoundList(input_dir, format)
 %% LOADCOMPOUNDLIST Loads the csv-file containing the list of ids and cmps.
     switch format
         case 'csi_fingerid'
-            fn = input_dir + '/compounds';
+            fn = strcat(input_dir, '/compounds');
             if ~ exist(fn, 'file') 
                 error('loadCompoundList:FileNotFound', ...
                     ['Cannot find training ids file: %s. Please run "fingerID list-compounds > compounds"' ...

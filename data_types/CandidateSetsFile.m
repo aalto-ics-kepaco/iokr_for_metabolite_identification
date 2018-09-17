@@ -34,7 +34,7 @@ classdef CandidateSetsFile < handle
         %               csv-files associated with the test or independent
         %               set under investigation.
         %
-        %       lut, string array, (1 x l)
+        %       lut, string array, of length l
         %               Look-Up-Table, mapping each test / independent
         %               examples i in {1,...,l} to one of the m candidate
         %               sets.
@@ -44,7 +44,7 @@ classdef CandidateSetsFile < handle
         %
         %               OR
         %
-        %               String 'ALL' if all features should be selected.
+        %               String '__ALL__' if all features should be selected.
         %
         %    OUTPUT: 
         %       obj     A valid object of class CANDIDATESETSFILE.
@@ -64,7 +64,7 @@ classdef CandidateSetsFile < handle
             if (nargin > 2)
                 obj.selec_feature_ = selec_feature;
             else
-                obj.selec_feature_ = 'ALL';
+                obj.selec_feature_ = '__ALL__';
             end % if
             
             if (nargin > 3)
@@ -191,7 +191,7 @@ classdef CandidateSetsFile < handle
             
             % Get mask for the fingerprints
             d = size(representation, 1);
-            if (strcmpi(rhs.selec_feature_, 'ALL'))
+            if (strcmpi(rhs.selec_feature_, '__ALL__'))
                 selec_feature = true(d, 1);
             else
                 if (numel(rhs.selec_feature_) ~= d) 

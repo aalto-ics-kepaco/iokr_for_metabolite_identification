@@ -7,7 +7,8 @@ function fps = loadFingerprints(fps_dir, spec_ids, verbose)
         verbose = true;
     end % if
 
-    fps_mat_fn = strcat(fps_dir, "/fps.mat");
+    fps_mat_fn_basename = "fps.mat";
+    fps_mat_fn = strcat(fps_dir, "/", fps_mat_fn_basename);
     if exist(fps_mat_fn, 'file')  
         if verbose 
             fprintf('Load "fps.mat" file.\n')

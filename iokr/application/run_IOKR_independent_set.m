@@ -102,7 +102,6 @@ function run_IOKR_independent_set(base_dir_training, base_dir_indep)
         save(model_fn, 'iokr_model', '-v7.3');
     else
         load(model_fn, 'iokr_model');
-        iokr_model = iokr_model.iokr_model;
     end % if
 
     %% Apply IOKR model: Predict candidate scores for the different candidate sets
@@ -110,10 +109,12 @@ function run_IOKR_independent_set(base_dir_training, base_dir_indep)
     kernel_dir_indep = strcat(base_dir_indep, '/kernels/');
         
     % Create candidate set object
-%     lut = arrayfun(@(x) basename(x.name), dir(strcat(base_dir_indep, '/candidates/*.candidates')), 'UniformOutput', false);
-%     Y_C = CandidateSetsFile(strcat(base_dir_indep, '/candidates/'), lut, fps_mask);
+    lut = arrayfun(@(x) basename(x.name), dir(strcat(base_dir_indep, '/candidates/*.candidates')), 'UniformOutput', false);
+    Y_C = CandidateSetsFile(strcat(base_dir_indep, '/candidates/'), lut, '__ALL__');
     
-    for indep_spec_id = cmps_indep.spec_id'
+    for cmps_indep_idx = 1:size(cmps_indep, 1)
+        % Get the identifier of the current spectra
+        indep_spec_id = cmps_indep.spec_id(cmps_indep_idx);
         indep_cand_lists = dir(strcat(base_dir_indep, '/candidates/', indep_spec_id{1}, '__*__*.candidates'));
         
         fprintf('Spectra ID: "%s", with %d candidate list(s).\n', indep_spec_id{1}, length(indep_cand_lists))
@@ -142,14 +143,17 @@ function run_IOKR_independent_set(base_dir_training, base_dir_indep)
             KX_list_test_test = KX_list_test_test(locb);
             
             % Predict candidate scores 
-            Y_C = CandidateSetsFile(strcat(base_dir_indep, '/candidates/'), {basename(indep_cand_list.name)}, '__ALL__');
             [scores, ~, squared_norm_of_h] = Test_IOKR(KX_list_train_test, KX_list_test_test, iokr_model, Y_train, ...
-                Y_C, iokr_model.ker_center);
+                Y_C.getSubset(basename(indep_cand_list.name)), iokr_model.ker_center);
             
             assert(~ any(isnan(scores{1})));
             assert(length(scores) == 1);
             
+            % Get ranks
+            rank = getRanksBasedOnScores(Y_C.getSubset(basename(indep_cand_list.name)), ...
+                cmps_indep.inchi2D(cmps_indep_idx), scores);
             
+            disp(rank)
         end % for
     end % for
 end % function

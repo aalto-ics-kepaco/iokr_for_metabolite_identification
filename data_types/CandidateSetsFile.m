@@ -256,23 +256,23 @@ classdef CandidateSetsFile < handle
         %    TODO: 
         %       * Allow also logical indices to get a subset of the
         %         candidates.
-            if (islogical (ids))
-                if (numel (ids) ~= numel (rhs.lut_) ...
-                    || numel (ids) ~= numel (rhs.selec_))
-                    error ('CandidateSets:getSubset:OutOfRange', ...
-                        'Logical index-vector does not match the dimension of "lut" and "selec".');
-                end % if
-            else
-                if (any (ids < 1) || any (ids > numel (rhs.lut_)))
-                    errorStr = 'Index out of bounds';
-                    if (isempty (rhs.lut_))
-                        errorStr = strcat (errorStr, ': LUT is empty.');
-                    end % if
-                    error ('CandidateSets:getSubset:OutOfRange', errorStr);
+            if (isstring(ids) || ischar(ids)) 
+                ids = find(cellfun(@(c) strcmp(c, ids), rhs.lut_));
+                if (isempty(ids))
+                    error('CandidateSetsFile:getSubset:OutOfRange', ...
+                        'Cannot find ids in lut.');
                 end % if
             end % if
             
-            lhs = CandidateSets (rhs.data_handle_, rhs.lut_(ids), rhs.selec_(ids), rhs.selec_feature_);
+            if (any (ids < 1) || any (ids > numel (rhs.lut_)))
+                errorStr = 'Index out of bounds';
+                if (isempty (rhs.lut_))
+                    errorStr = strcat (errorStr, ': LUT is empty.');
+                end % if
+                error ('CandidateSetsFile:getSubset:OutOfRange', errorStr);
+            end % if
+            
+            lhs = CandidateSetsFile (rhs.data_dir_, rhs.lut_(ids), rhs.selec_feature_);
         end % function    
         
         function selec = findExampleInCandidateSet (obj, idx, identifier)
@@ -302,7 +302,7 @@ classdef CandidateSetsFile < handle
         %                       of identifiers associated with the
         %                       candidate set of example IDX.
             identifiersOfCandidates = obj.getCandidateSet ( ...
-                idx, 0, CandidateSets.candidateSetFieldnames.id);
+                idx, false, 'id');
             
             selec = strcmp (identifiersOfCandidates, identifier);
             if (~ any (selec))

@@ -131,14 +131,14 @@ classdef CandidateSetsFile < handle
             end % if
             if (isempty(id)); lhs = {}; return; end % if
             if (numel(id) > 1)
-                error ('CandidateSets:getCandidateSet:InvalidArgument', 'You can only access one element at a time.');
+                error ('CandidateSetsFile:getCandidateSet:InvalidArgument', 'You can only access one element at a time.');
             end % if
             if (id < 1) || (id > numel(rhs.lut_))
                 errorStr = 'Index out of bounds';
                 if (isempty(rhs.lut_))
                     errorStr = strcat(errorStr, ': LUT is empty.');
                 end % if
-                error('CandidateSets:getCandidateSet:OutOfRange', errorStr);
+                error('CandidateSetsFile:getCandidateSet:OutOfRange', errorStr);
             end % if 
             
             if (nargin < 3) % NOTE: 'rhs' is a paramter
@@ -155,20 +155,20 @@ classdef CandidateSetsFile < handle
                 fieldname = '';
             else
                 if (~ ismember(fieldname, fieldnames(CandidateSetsFile.candidate_set_fieldnames)))
-                    error('CandidateSet:getCandidateSet:InvalidArgument', ...
+                    error('CandidateSetFile:getCandidateSet:InvalidArgument', ...
                         'Fieldname "%s" does not exist.', fieldname);
                 end % if
             end % if
             
             cand_fn = rhs.data_dir_ + "/" + rhs.lut_(id) + ".fpt";
             if (~ exist(cand_fn, 'file'))
-                error('CandidateSet:getCandidateSet:NoSuchFileOrDirectory', ...
+                error('CandidateSetFile:getCandidateSet:NoSuchFileOrDirectory', ...
                     'Candidate set file "%s" does not exist.', cand_fn);
             end % if
             
             cand_fid = fopen(cand_fn, 'r');
             if (cand_fid == -1)
-                error('CandidateSet:getCandidateSet:IOError', 'Cannot open "%s",', cand_fn);
+                error('CandidateSetFile:getCandidateSet:IOError', 'Cannot open "%s",', cand_fn);
             end % if
             
             % Read header of the candidate file to determine the relevant
@@ -195,7 +195,7 @@ classdef CandidateSetsFile < handle
                 selec_feature = true(d, 1);
             else
                 if (numel(rhs.selec_feature_) ~= d) 
-                    error('CandidateSet:getCandidateSet:InvalidArgument', ...
+                    error('CandidateSetFile:getCandidateSet:InvalidArgument', ...
                         'Dimension of the feature selection mask does not math the feature dimension' + ...
                         '(%d vs. %d)', numel(rhs.selec_feature_), d);
                 end % if
@@ -216,7 +216,7 @@ classdef CandidateSetsFile < handle
                     case 'num'
                         lhs = numel(cand_data{id_col});
                     otherwise
-                        error('CandidateSet:getCandidateSet:InvalidArgument', 'No field with name "%s".', ...
+                        error('CandidateSetFile:getCandidateSet:InvalidArgument', 'No field with name "%s".', ...
                             fieldname)
                 end % switch
             end % if 
@@ -232,6 +232,48 @@ classdef CandidateSetsFile < handle
         %       numberOfExamples        Intenger 
             numberOfExamples = numel (obj.lut_);
         end % if
+        
+        function lhs = getSubset (rhs, ids)
+        %% GETSUBSET returns an obj. CanidateSets with updated Look-Up-Table and selection
+        %    obj = GETSUBSET (RHS, IDS) returns an object CandidateSets,
+        %    whereby OBJ's look-up-table contains only the elements
+        %    belonging to the IDS. Furthermore, the SELEC vector is updated
+        %    and also only contains the elements at position IDS. 
+        %
+        %    INPUTS:
+        %       rhs         Object of class CandidateSets
+        %       ids         Indices of the example which should be part of
+        %                   the selected subset.
+        %
+        %    OUTPUT:
+        %       lhs         Object of class CandidateSets with an updated
+        %                   look-up-table and selection vector.
+        %
+        %    EXAMPLE:
+        %       Y_c = CandidateSets (DataHandle (cand), mf_corres); 
+        %       Y_c_train = Y_c.getSubset (idx_train)
+        %
+        %    TODO: 
+        %       * Allow also logical indices to get a subset of the
+        %         candidates.
+            if (islogical (ids))
+                if (numel (ids) ~= numel (rhs.lut_) ...
+                    || numel (ids) ~= numel (rhs.selec_))
+                    error ('CandidateSets:getSubset:OutOfRange', ...
+                        'Logical index-vector does not match the dimension of "lut" and "selec".');
+                end % if
+            else
+                if (any (ids < 1) || any (ids > numel (rhs.lut_)))
+                    errorStr = 'Index out of bounds';
+                    if (isempty (rhs.lut_))
+                        errorStr = strcat (errorStr, ': LUT is empty.');
+                    end % if
+                    error ('CandidateSets:getSubset:OutOfRange', errorStr);
+                end % if
+            end % if
+            
+            lhs = CandidateSets (rhs.data_handle_, rhs.lut_(ids), rhs.selec_(ids), rhs.selec_feature_);
+        end % function    
         
         function selec = findExampleInCandidateSet (obj, idx, identifier)
         %% FINDEXAMPLEINCANDIDATESET returns a selection only of the candidate with matching identifier

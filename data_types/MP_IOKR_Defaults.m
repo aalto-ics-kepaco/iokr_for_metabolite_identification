@@ -94,7 +94,7 @@ classdef MP_IOKR_Defaults
             end % for
         end % function 
         
-        function str = param2str (param, simple)
+        function str = param2str (param, simple, include_info)
         %% PARAM2STR Returns a string containing the parameter setting
             if (nargin < 1)
                 error ('MP_IOKR_Defaults:param2str:InvalidInput', ...
@@ -102,6 +102,9 @@ classdef MP_IOKR_Defaults
             end % if
             if (nargin < 2)
                 simple = true;
+            end % if
+            if (nargin < 3)
+                include_info = {'iokr_param', 'ky_param', 'data_param'};
             end % if
             
             if simple 
@@ -111,24 +114,34 @@ classdef MP_IOKR_Defaults
                 else
                     n_kernel = 1;
                 end % if
-                str = sprintf ('input-kernel=%s_n-kernels=%d', param.data_param.inputKernel, n_kernel);
+                
+                str = '';
+                
+                if ismember('data_param', include_info)
+                    str = strcat(str, sprintf ('input-kernel=%s_n-kernels=%d_', ...
+                        param.data_param.inputKernel, n_kernel));
+                end % if
                 
                 % iokr_param / mp_iokr_param
-                if     (ismember ('iokr_param', fieldnames (param)))
+                if ismember('iokr_param', include_info)
                     center               = num2str (param.iokr_param.center);
                     mkl                  = param.iokr_param.mkl;
                     model_representation = param.iokr_param.model_representation;
-                elseif (ismember ('mp_iokr_param', fieldnames (param)))
+                end % if
+                
+                if ismember('mp_iokr_param', include_info)
                     center               = param.mp_iokr_param.center;
                     mkl                  = param.mp_iokr_param.mkl;
                     model_representation = param.mp_iokr_param.model_representation;
                 end % if
-                str = strcat (str, sprintf ('_center=%s_mkl=%s_model-representation=%s', ...
+                str = strcat (str, sprintf ('center=%s_mkl=%s_model-representation=%s_', ...
                         center, mkl, model_representation));
                 
                 % ky_param
-                str = strcat (str, sprintf ('_type=%s_base-kernel=%s', ...
-                    param.ky_param.type, param.ky_param.base_kernel));
+                if ismember('ky_param', include_info)
+                    str = strcat (str, sprintf ('type=%s_base-kernel=%s', ...
+                        param.ky_param.type, param.ky_param.base_kernel));
+                end % if
             else
                 error ('Not implemented yet')
             end % if

@@ -92,6 +92,8 @@ function run_IOKR_CASMI2017 (input_dir_training, input_dir_test, output_dir, ...
             fprintf ('Filename KX_train_test: %s\n', challenge_KX_train_test_fn)
             fprintf ('Filename KX_test: %s\n',       challenge_KX_test_fn)
 
+            assert('order of the kernels not correct')
+            
             [KX_list_train_test, KX_names] = read_challenge_kernel ( ...
                 [input_dir_test, '/', challenge_param.ion_mode, '/kernels_training_test/', challenge_KX_train_test_fn]);
             [~, locb]                      = ismember (upper (KX_names), iokr_param.data_param.availInputKernels);

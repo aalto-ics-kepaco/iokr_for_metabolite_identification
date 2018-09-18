@@ -77,7 +77,7 @@ function saveKernel (filename, KX, header, overwrite)
             case '.mat'
                 save (filename, 'KX', '-v7.3');
                 if (~ isempty (header))
-                    save (filename, 'header', '-append', '-v7.3');
+                    save (filename, 'header', '-append');
                 end % if
             otherwise 
                 error ('saveKernel:InvalidInput', ...

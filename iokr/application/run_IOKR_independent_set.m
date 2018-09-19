@@ -9,7 +9,8 @@ function run_IOKR_independent_set(base_dir_training, base_dir_indep)
     %% Set up parameters
     %% -----------------
     param = MP_IOKR_Defaults.setDefaultsIfNeeded(struct(), {'data_param','ky_param','iokr_param', 'opt_param'});
-    param.iokr_param.model_representation = 'Chol_decomp_of_C';
+%     param.iokr_param.model_representation = 'Chol_decomp_of_C';
+    param.iokr_param.model_representation = 'only_C';
     
     param.indep_param = struct('remove_test_inchikey2D_from_training', true);
     
@@ -55,7 +56,7 @@ function run_IOKR_independent_set(base_dir_training, base_dir_indep)
     % NOTE: Y is a (d x n)-matrix, with d being the dimension of the fps,
     %       and n being the number of examples.
     tmp = loadFingerprints(strcat(base_dir_training, '/fingerprints/'), cmps_train.spec_id);
-    Y_train = tmp.fps;
+    Y_train = full(tmp.fps);
     fps_mask = tmp.mask; % TODO: What should we do with the fingerprint mask?
     clear tmp;
     
@@ -106,55 +107,97 @@ function run_IOKR_independent_set(base_dir_training, base_dir_indep)
 
     %% Apply IOKR model: Predict candidate scores for the different candidate sets
     %% ---------------------------------------------------------------------------
-    kernel_dir_indep = strcat(base_dir_indep, '/kernels/');
-        
-    % Create candidate set object
-    lut = arrayfun(@(x) basename(x.name), dir(strcat(base_dir_indep, '/candidates/*.candidates')), 'UniformOutput', false);
-    Y_C = CandidateSetsFile(strcat(base_dir_indep, '/candidates/'), lut, '__ALL__');
     
-    for cmps_indep_idx = 1:size(cmps_indep, 1)
-        % Get the identifier of the current spectra
-        indep_spec_id = cmps_indep.spec_id(cmps_indep_idx);
-        indep_cand_lists = dir(strcat(base_dir_indep, '/candidates/', indep_spec_id{1}, '__*__*.candidates'));
+    %% 1) Create candidate set object
+    indep_cand_lists = cell(size(cmps_indep, 1), 1);
+    for idx = 1:length(indep_cand_lists)
+        tmp = dir(strcat(base_dir_indep, '/candidates/', cmps_indep.spec_id{idx}, '__*__*.candidates'));
+        if isempty(tmp)
+            warning('Cannot find candidate set for "%s".', cmps_indep.spec_id{idx});
+        elseif length(tmp) > 1
+            error('run_IOKR_independent_set:NotImplementedYet', ...
+                'Currently only one candidate set per spectra can be processed.');
+        end % if
         
-        fprintf('Spectra ID: "%s", with %d candidate list(s).\n', indep_spec_id{1}, length(indep_cand_lists))
+        indep_cand_lists{idx} = basename(tmp(1).name);
+    end % for
+    clear tmp;
+    Y_C = CandidateSetsFile(strcat(base_dir_indep, '/candidates/'), indep_cand_lists, '__ALL__');
+    
+    %% 2) Load the test kernels
+    KX_list_train_test = arrayfun(@(c) nan(sum(cmp_is_used_for_training), size(cmps_indep, 1)), ... 
+        1:length(param.data_param.availInputKernels), 'UniformOutput', false);
+    KX_list_test_test = arrayfun(@(c) zeros(size(cmps_indep, 1)), ... 
+        1:length(param.data_param.availInputKernels), 'UniformOutput', false);
+    
+    kernel_dir_indep = strcat(base_dir_indep, '/kernels/');
+    for idx = 1:length(indep_cand_lists)        
+        % Load kernels
+        [tmp_KX_train_test, KX_names_train_test] = read_challenge_kernel( ...
+            strcat(kernel_dir_indep, basename(indep_cand_lists{idx}), '.train_test_kernels'), ' ', true);
+        [tmp_KX_test_test, KX_names_test_test] = read_challenge_kernel( ...
+            strcat(kernel_dir_indep, basename(indep_cand_lists{idx}), '.test_test_kernels'), ' ', true);
+
+        % Check order of the test kernels against the ones used for
+        % the model training.
+        [~, locb] = ismember(upper(param.data_param.availInputKernels), upper(KX_names_train_test));
+        if ~issorted(locb)
+            warning('Train-vs-test: "locb" is not sorted.')
+        end % if
+        tmp_KX_train_test = tmp_KX_train_test(locb);
+        tmp_KX_train_test = cellfun(@(KX) KX(cmp_is_used_for_training, :), tmp_KX_train_test, ...
+            'UniformOutput', false);
+
+        [~, locb] = ismember(upper(param.data_param.availInputKernels), upper(KX_names_test_test));
+        if ~issorted(locb)
+            warning('Test-vs-test: "locb" is not sorted.')
+        end % if
+        tmp_KX_test_test = tmp_KX_test_test(locb);
         
-        for indep_cand_list = indep_cand_lists'
-            % Load kernels
-            [KX_list_train_test, KX_names_train_test] = read_challenge_kernel( ...
-                strcat(kernel_dir_indep, basename(indep_cand_list.name), '.train_test_kernels'), ' ', true);
-            [KX_list_test_test, KX_names_test_test] = read_challenge_kernel( ...
-                strcat(kernel_dir_indep, basename(indep_cand_list.name), '.test_test_kernels'), ' ', true);
-            
-            % Check order of the test kernels against the ones used for
-            % the model training.
-            [~, locb] = ismember(upper(param.data_param.availInputKernels), upper(KX_names_train_test));
-            if ~issorted(locb)
-                warning('Train-vs-test: "locb" is not sorted.')
-            end % if
-            KX_list_train_test = KX_list_train_test(locb);
-            KX_list_train_test = cellfun(@(KX) KX(cmp_is_used_for_training, :), KX_list_train_test, ...
-                'UniformOutput', false);
-            
-            [~, locb] = ismember(upper(param.data_param.availInputKernels), upper(KX_names_test_test));
-            if ~issorted(locb)
-                warning('Test-vs-test: "locb" is not sorted.')
-            end % if
-            KX_list_test_test = KX_list_test_test(locb);
-            
-            % Predict candidate scores 
-            [scores, ~, squared_norm_of_h] = Test_IOKR(KX_list_train_test, KX_list_test_test, iokr_model, Y_train, ...
-                Y_C.getSubset(basename(indep_cand_list.name)), iokr_model.ker_center);
-            
-            assert(~ any(isnan(scores{1})));
-            assert(length(scores) == 1);
-            
-            % Get ranks
-            rank = getRanksBasedOnScores(Y_C.getSubset(basename(indep_cand_list.name)), ...
-                cmps_indep.inchi2D(cmps_indep_idx), scores);
-            
-            disp(rank)
+        for k_idx = 1:length(param.data_param.availInputKernels)
+            KX_list_train_test{k_idx}(:, idx) = tmp_KX_train_test{k_idx};
+            KX_list_test_test{k_idx}(idx, idx) = tmp_KX_test_test{k_idx};
         end % for
+    end % for
+    
+    %% 3) Predict candidate scores 
+    [scores, ~, squared_norm_of_h] = Test_IOKR(KX_list_train_test, KX_list_test_test, iokr_model, Y_train, ...
+        Y_C, iokr_model.ker_center);
+    
+    %% 4) Calculate ranks and top-k performance
+    ranks = getRanksBasedOnScores(Y_C, cmps_indep.inchikey2D, scores);
+    rankPerc = getRankPerc(ranks, ...
+        arrayfun(@(idx) Y_C.getCandidateSet(idx, false, 'num'), 1:Y_C.getNumberOfExamples()));
+    disp(rankPerc([1,5,10,20]))
+    
+    %% 5) Store results
+    for idx = 1:length(indep_cand_lists)
+        inchi2D = Y_C.getCandidateSet(idx, false, 'inchi2D');
+        inchikey2D = Y_C.getCandidateSet(idx, false, 'id');
+        is_true_candidate = Y_C.findExampleInCandidateSet(idx, cmps_indep.inchikey2D{idx});
+        
+        
+        % "Random rank": two molecules with the same score, more or less
+        % randomly ordered. This is because the order of the candidate in
+        % the set is not sorted.
+        [~, tmp] = sort(scores{idx}, 'descend');
+        ranks_based_on_msms_score = zeros(length(inchi2D), 1);
+        ranks_based_on_msms_score(tmp) = 1:length(inchi2D);
+        
+        % "Mean rank": two molecules with the same score will have
+        % averaged rank. 
+        
+        % "Shared rank (dense)": two molecules with the same score will have the
+        % same rank.  
+        % [~, ~, dense_shared_rank] = unique(scores{idx})
+        
+        % "Shared rank (gaps)": two molecules with the same score will have the
+        % same rank.  
+        
+        table(inchi2D, inchikey2D, scores{idx}', repmat(squared_norm_of_h(idx), [length(scores{idx}), 1]), ...
+            is_true_candidate, ranks_based_on_msms_score, ...
+            'VariableNames', {'inchi2D', 'inchikey2D', 'msms_score', 'squared_norm_of_hx', ...
+            'is_true_candidate', 'rank_based_on_msms_score'})
     end % for
 end % function
 

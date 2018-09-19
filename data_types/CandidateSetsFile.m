@@ -8,8 +8,9 @@ classdef CandidateSetsFile < handle
     properties(Constant, Access = private)
         candidate_set_fieldnames = struct( ...
             'data', 'fingerprints', ...        
-            'id', 'inchi2D', ...
-            'num', 'numberOfCandidates');
+            'id', 'inchikey2D', ...
+            'num', 'numberOfCandidates', ...
+            'inchi2D', 'inchi2D');
     end % properties: constant, private
     
     properties(Access = private)
@@ -175,10 +176,11 @@ classdef CandidateSetsFile < handle
             % columns 
             header = textscan(cand_fid, rhs.csv_options.formatstr, 1, 'Delimiter', rhs.csv_options.delimiter);
             
-            % Get the column indices for the ids, e.g. inchi, and the data,
+            % Get the column indices for the ids, e.g. inchikey, and the data,
             % e.g. fingerprints.
             id_col = cellfun(@(x) strcmp(x, CandidateSetsFile.candidate_set_fieldnames.id), header);
             data_col = cellfun(@(x) strcmp(x, CandidateSetsFile.candidate_set_fieldnames.data), header);
+            inchi2D_col = cellfun(@(x) strcmp(x, 'inchi2D'), header);
             
             % Read in the whole matrix. 
             % TODO: If only the ids are required, we do not need to read
@@ -187,7 +189,8 @@ classdef CandidateSetsFile < handle
             fclose(cand_fid);
             
             % Transform the fingerprint into sparse matrix
-            representation = sparse(cell2mat(cellfun(@(c) c - '0', cand_data{data_col}, 'uniformoutput', false)))';
+%             representation = sparse(cell2mat(cellfun(@(c) c - '0', cand_data{data_col}, 'uniformoutput', false)))';
+            representation = cell2mat(cellfun(@(c) c - '0', cand_data{data_col}, 'uniformoutput', false))';
             
             % Get mask for the fingerprints
             d = size(representation, 1);
@@ -207,6 +210,7 @@ classdef CandidateSetsFile < handle
                 lhs.data = representation(selec_feature, :);
                 lhs.id = cand_data{id_col};
                 lhs.num = numel(cand_data{id_col});
+                lhs.inchi2D = cand_data{inchi2D_col};
             else
                 switch (fieldname)
                     case 'id'
@@ -215,6 +219,8 @@ classdef CandidateSetsFile < handle
                         lhs = representation(selec_feature, :);
                     case 'num'
                         lhs = numel(cand_data{id_col});
+                    case 'inchi2D'
+                        lhs = cand_data{inchi2D_col};
                     otherwise
                         error('CandidateSetFile:getCandidateSet:InvalidArgument', 'No field with name "%s".', ...
                             fieldname)

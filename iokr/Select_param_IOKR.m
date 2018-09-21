@@ -1,5 +1,5 @@
 function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, ...
-    Y_train, ky_param, opt_param, iokr_param)
+    Y_train, ky_param, opt_param, iokr_param, verbose)
 %======================================================
 % DESCRIPTION:
 % Selection of the regularization parameter in IOKR in the case of a kernel represention in output
@@ -19,6 +19,10 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, .
 %
 %======================================================    
 
+    if nargin < 6
+        verbose = false;
+    end % if
+
     % Possible values for the regularization parameter
     val_lambda = opt_param.val_lambda;
     
@@ -30,8 +34,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, .
     end
     
     switch ky_param.representation
-        case 'feature'
-                        
+        case 'feature'            
             % Multiple kernel learning
             switch ky_param.type
                 case 'linear'
@@ -92,7 +95,7 @@ function [ lambda_opt, KY_par_opt, w_opt ] = Select_param_IOKR (KX_list_train, .
                 KY_train = output_kernel_preprocessing_train(Y_train, ky_param_all_comb(ip), iokr_param.center);
 
                 % Computation of the MSE for the different regularization parameters
-                mse(ip,:) = IOKR_kernel_eval_mse(KX_train, KY_train, opt_param);
+                mse(ip,:) = IOKR_kernel_eval_mse(KX_train, KY_train, opt_param, verbose);
             end
 
             % Parameter selection

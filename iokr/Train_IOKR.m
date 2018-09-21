@@ -1,5 +1,5 @@
 function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
-    ky_param, opt_param, iokr_param )
+    ky_param, opt_param, iokr_param, verbose )
 %======================================================
 % DESCRIPTION:
 % Training step of IOKR
@@ -17,23 +17,38 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
 %                   and information on the training data 
 %
 %======================================================
-  
+    if nargin < 6
+        verbose = false;
+    end % if
+    
     % Selection of the regularization parameter and of the output 
     % kernel parameter(s)
+    if verbose; tic; end % if
     [lambda_opt, KY_par_opt, w_opt] = Select_param_IOKR ( ...
-        KX_list_train, Y_train, ky_param, opt_param, iokr_param);
+        KX_list_train, Y_train, ky_param, opt_param, iokr_param, verbose);
+    if verbose 
+        fprintf('IOKR parameter selection took %.3fs.\n', toc);
+    end % if
 
     % Kernels processing and kernel combination
+    if verbose; tic; end % if
     [KX_train, process_input] = input_kernel_preprocessing_train (...
         KX_list_train, w_opt, iokr_param.center);
+    if verbose 
+        fprintf('Full data input kernel processing took %.3fs.\n', toc);
+    end % if
     
-    % Training IOKR with the selected parameter
+    % Training IOKR with the selected parameters
+    if verbose; tic; end % if
     switch iokr_param.model_representation
         case 'only_C'
             C = lambda_opt*eye(size(KX_train)) + KX_train;
         case 'Chol_decomp_of_C'
             C = chol (lambda_opt*eye(size(KX_train)) + KX_train, 'lower');
     end % switch     
+    if verbose
+        fprintf('Calculation of the model using all training data took %.3fs.\n', toc);
+    end % if
     
     train_model = struct (                               ...
         'C',                    C,                       ...

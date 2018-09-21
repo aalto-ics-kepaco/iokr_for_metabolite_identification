@@ -18,7 +18,6 @@ function rankPerc = getRankPerc (ranks, candNum)
             '"candNum" must be of same length as "ranks" or one.');
     end % if
             
-    
     nel = hist (ranks(hasRank), 1:maxCandNum);
     rankPerc = cumsum(nel)';
     rankPerc = rankPerc / nValidRanks * 100;

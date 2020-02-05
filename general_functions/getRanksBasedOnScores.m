@@ -28,9 +28,11 @@ function ranks = getRanksBasedOnScores (Y_C, ids, scores, eval_set)
         % Get the inchis of all the candidate in the set for test
         % example j
         inchis_c = Y_C.getCandidateSet (j, false, 'id');
-        assert (any (Y_C.findExampleInCandidateSet (j, ids{j})), ...
-            'True candidate is not in the candidate set.');
         
-        ranks(j) = find (strcmp (inchis_c(IX), ids{j}));
+        if any(Y_C.findExampleInCandidateSet(j, ids{j}))  
+            ranks(j) = find (strcmp (inchis_c(IX), ids{j}));
+        else
+            % True candidate not in the candidate set.
+        end % if
     end % for
 end % function

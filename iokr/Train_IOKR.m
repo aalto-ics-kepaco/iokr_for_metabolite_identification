@@ -28,6 +28,7 @@ function [ train_model ] = Train_IOKR( KX_list_train, Y_train, ...
         KX_list_train, Y_train, ky_param, opt_param, iokr_param, verbose);
     if verbose 
         fprintf('IOKR parameter selection took %.3fs.\n', toc);
+        fprintf('Optimal regularization parameter: %f.\n', lambda_opt);
     end % if
 
     % Kernels processing and kernel combination

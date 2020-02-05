@@ -15,13 +15,13 @@ function [fps, mask] = loadFingerprints(raw_fps_dir, mat_fps_dir, spec_ids, verb
     spec_ids_hash = string2hash(strjoin(spec_ids, '_'));
     
     fps_mat_fn_basename = sprintf('fps_%0.f.mat', spec_ids_hash);
-    fps_mat_fn = strcat(mat_fps_dir, "/", fps_mat_fn_basename);
+    fps_mat_fn = fullfile(mat_fps_dir, fps_mat_fn_basename);
     if exist(fps_mat_fn, 'file')  
         if verbose 
             fprintf('Load "%s" file.\n', fps_mat_fn_basename);
         end % if
         
-        load(fps_mat_fn);
+        load(fps_mat_fn, 'fps_struct');
     else
         n_spec = length(spec_ids);
         
@@ -31,17 +31,13 @@ function [fps, mask] = loadFingerprints(raw_fps_dir, mat_fps_dir, spec_ids, verb
         end % if 
         
         % Load the fingerprint mask and determine fingerprint dimension
-        mask = load_fingerprint_mask(strcat(raw_fps_dir, "/fingerprints.mask"));
+        mask = load_fingerprint_mask(fullfile(raw_fps_dir, "fingerprints.mask"));
         n_fps = length(mask);
         
         fps_struct = struct('fps', false(n_fps, n_spec), 'mask', mask);
         
-        for ii = 1:n_spec
-            if verbose &&  ~ mod(ii, 500)
-                fprintf('Process spectra id %d.\n', ii);
-            end % if
-            
-            fps_spec_fn = strcat(raw_fps_dir, "/", spec_ids{ii}, ".fpt");
+        for ii = 1:n_spec            
+            fps_spec_fn = fullfile(raw_fps_dir, strcat(spec_ids{ii}, '.fpt'));
             fid = fopen(fps_spec_fn, 'r');
             if fid == -1
                 error('loadFingerprints:NoSuchFileOrDirectory', 'Cannot open fps-file "%s".', ...
@@ -52,6 +48,10 @@ function [fps, mask] = loadFingerprints(raw_fps_dir, mat_fps_dir, spec_ids, verb
             fps_struct.fps((fgetl(fid) - '0') == 1, ii) = true;
             
             fclose(fid);
+            
+            if verbose && ((mod(ii, 500) == 0) || (ii == n_spec))
+                fprintf('Processed spectra: %d/%d.\n', ii, n_spec);
+            end % if
         end % if
         
         fps = fps_struct.fps;

@@ -77,5 +77,5 @@ function [ ] = train_iokr_model (inputDir, outputDir)
         mkdir (outputDir);
     end % if
     save (fullfile (outputDir, strcat (MP_IOKR_Defaults.param2str (param), '.mat')), ...
-        'model', 'param');
+        'model', 'param', 'n_fps', 'Y_train');
 end

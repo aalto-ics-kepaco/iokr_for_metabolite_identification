@@ -52,7 +52,7 @@ classdef MP_IOKR_Defaults
         %       the 'mp_iokr_param'.
         data_param = struct (                                                              ...
             'usePreCalcStat',       false,                                                 ...
-            'inputKernel',          '__ALL__',                                             ...
+            'inputKernel',          'ALL',                                             ...
             'availInputKernels',    {{'ALIGND', 'ALIGN', 'CEC', 'CP2Plus', 'CP2', 'CPC',   ...
                  'CPI', 'CPJB', 'CPJ', 'CPK', 'CSC', 'FIPP', 'LB', 'LC', 'LIPP', 'LI',     ...
                  'LW', 'NB', 'NI', 'NSF', 'PPKR', 'RLB', 'RLI', 'WPC'}},                   ...
@@ -109,7 +109,7 @@ classdef MP_IOKR_Defaults
             
             if simple 
                 % data_param
-                if (strcmp (param.data_param.inputKernel, '__ALL__'))
+                if (strcmp (param.data_param.inputKernel, 'ALL'))
                     n_kernel = length (param.data_param.availInputKernels);
                 else
                     n_kernel = 1;
@@ -118,7 +118,7 @@ classdef MP_IOKR_Defaults
                 str = '';
                 
                 if ismember('data_param', include_info)
-                    str = strcat(str, sprintf ('input-kernel=%s_n-kernels=%d_', ...
+                    str = strcat(str, sprintf ('ikernel=%s__n=%d__', ...
                         param.data_param.inputKernel, n_kernel));
                 end % if
                 
@@ -134,13 +134,13 @@ classdef MP_IOKR_Defaults
                     mkl                  = param.mp_iokr_param.mkl;
                     model_representation = param.mp_iokr_param.model_representation;
                 end % if
-                str = strcat (str, sprintf ('center=%s_mkl=%s_model-representation=%s_', ...
+                str = strcat (str, sprintf ('cent=%s__mkl=%s__modelrep=%s__', ...
                         center, mkl, model_representation));
                 
                 % ky_param
                 if ismember('ky_param', include_info)
-                    str = strcat (str, sprintf ('type=%s_base-kernel=%s', ...
-                        param.ky_param.type, param.ky_param.base_kernel));
+                    str = strcat (str, sprintf ('type=%s__base=%s__parsel=%s', ...
+                        param.ky_param.type, param.ky_param.base_kernel, param.ky_param.param_selection));
                 end % if
             else
                 error ('Not implemented yet')

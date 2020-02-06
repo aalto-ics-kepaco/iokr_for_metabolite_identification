@@ -1,14 +1,25 @@
-function [ ] = train_iokr_model (inputDir, outputDir, ionization_mode)
+function [ ] = train_iokr_model (inputDir, outputDir)
 %======================================================
 % DESCRIPTION:
-% Script for running IOKR on the
+% Script to train an IOKR model
 %
 % INPUTS:
-% inputDir:        string, base-dictionary containing the input data
-% result_dir:      string, base-dictionary where the output should be stored
-% ionization_mode: string, which ionization to predict the scores for {'positive', 'negative'}
+% inputDir:       string, base-dictionary containing the input data
+% outputDir:      string, base-dictionary where the output should be stored
+%                 (Default is the same as the 'inputDir')
 %
+% Folders and files that need to exists for this script to run:
+%   inputDir/kernels:       Directory containing the training kernels (*.mat)
+%   inputDir/compounds.csv: Output if 'fingerID list-compounds', a
+%                           tab-separated header-less list with three columns
+%                           <SpecID>\t<InChIKey1>\t<InChI2D> 
+%   inputDir/fingerprints:  Directory containing the fingerprint files (*.fps)
+%                           for all training compounds. There must be one file
+%                           per <SpecID>.
 %======================================================
+    if nargin < 2
+        outputDir = inputDir;
+    end % if
 
     %--------------------------------------------------------------
     % Set up parameters
@@ -18,7 +29,6 @@ function [ ] = train_iokr_model (inputDir, outputDir, ionization_mode)
     
     % Number of cross-validation folds for the hyper-parameter
     % optimization, e.g. finding lambda (regularization parameter).
-    param.opt_param.nInnerFolds = 10;
 
     % Output kernel: kappa_y
     param.ky_param.representation  = 'kernel';
@@ -26,33 +36,46 @@ function [ ] = train_iokr_model (inputDir, outputDir, ionization_mode)
     param.ky_param.base_kernel     = 'tanimoto';
     param.ky_param.param_selection = 'entropy';
     
+    param.iokr_param.model_representation = 'Chol_decomp_of_C';
+    
     param.debug_param.verbose = true;
     
     %--------------------------------------------------------------
     % Load and prepare data
     %--------------------------------------------------------------
-    % Information about MS/MS spectra ids, CCS values and molecular
-    % formulas for the training compounds. The order of the comounds in
-    % this table, corresponds to the order of the rows and columns in the
-    % input kernel matrices. 
-    cmps = readtable(fullfile(inputDir, 'compounds.csv'));
+    cmps = readtable(fullfile(inputDir, 'compounds.csv'), 'Delimiter', '\t', 'ReadVariableNames', false);
     
     % Fingerprints
     fps_dir = fullfile(inputDir, 'fingerprints');
-    [Y_train, ~] = loadFingerprints(fps_dir, fps_dir, cmps.spec_id);  % Y with shape = (n_fps, n_samples)
+    [Y_train, ~] = loadFingerprints(fps_dir, fps_dir, cmps.Var1);  % Y with shape = (n_fps, n_samples)
+    [n_fps, n_samples] = size(Y_train);
+    
+    fprintf('Number of fingerprint vectors: %d\n', n_samples);
+    fprintf('Fingerprint dimension: %d\n', n_fps);
          
     % Input kernels
-    kernel_dir = fullfile(inputDir, 'kernels');
-    kernel_files = dir(fullfile(kernel_dir, '*.mat'));
+    kernel_dir = fullfile (inputDir, 'kernels');
+    kernel_files = dir (fullfile (kernel_dir, '*.mat'));
     param.data_param.availInputKernels = arrayfun(@(file) basename(file.name), ...
         kernel_files, 'UniformOutput', false);
     KX_list_train = loadInputKernelsIntoList(kernel_dir ,param, '.mat');
     
+    [n_samples_kernel, ~] = size(KX_list_train{1});
+    fprintf('Number of rows in training kernel matrix: %d\n', n_samples_kernel);
+    
     %--------------------------------------------------------------
     % Train IOKR Model
     %--------------------------------------------------------------
-    iokr_model = Train_IOKR (KX_list_train, Y_train, ...
+    model = Train_IOKR (KX_list_train, Y_train, ...
         param.ky_param, param.opt_param, param.iokr_param, param.debug_param.verbose);
     
-    save ()
+    %--------------------------------------------------------------
+    % Write out the IOKR Model
+    %--------------------------------------------------------------
+    outputDir = fullfile (outputDir, 'iokr_models');
+    if ~ exist (outputDir, 'dir')
+        mkdir (outputDir);
+    end % if
+    save (fullfile (outputDir, strcat (MP_IOKR_Defaults.param2str (param), '.mat')), ...
+        'model', 'param');
 end

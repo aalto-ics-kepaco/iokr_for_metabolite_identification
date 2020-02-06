@@ -30,24 +30,22 @@ function [fps, mask] = loadFingerprints(raw_fps_dir, mat_fps_dir, spec_ids, verb
                 fps_mat_fn_basename);
         end % if 
         
-        % Load the fingerprint mask and determine fingerprint dimension
-        mask = load_fingerprint_mask(fullfile(raw_fps_dir, "fingerprints.mask"));
-        n_fps = length(mask);
+        mask_fn = fullfile(raw_fps_dir, "fingerprints.mask");
+        if exist(mask_fn, 'file')
+            % Load the fingerprint mask and determine fingerprint dimension
+            mask = load_fingerprint_mask(mask_fn);
+        else
+            % Load the first fingerprint to determine the fingerprint dimension
+            fps_spec_fn = fullfile(raw_fps_dir, strcat(spec_ids{1}, '.fpt'));
+            mask = true(length(loadSingleFingerprintVector_(fps_spec_fn)));
+        end % if
         
+        n_fps = length(mask);
         fps_struct = struct('fps', false(n_fps, n_spec), 'mask', mask);
         
         for ii = 1:n_spec            
             fps_spec_fn = fullfile(raw_fps_dir, strcat(spec_ids{ii}, '.fpt'));
-            fid = fopen(fps_spec_fn, 'r');
-            if fid == -1
-                error('loadFingerprints:NoSuchFileOrDirectory', 'Cannot open fps-file "%s".', ...
-                    fps_spec_fn);
-            end % if
-            
-            % parse fingerprint vector 
-            fps_struct.fps((fgetl(fid) - '0') == 1, ii) = true;
-            
-            fclose(fid);
+            fps_struct.fps(:, ii) = loadSingleFingerprintVector_(fps_spec_fn);
             
             if verbose && ((mod(ii, 500) == 0) || (ii == n_spec))
                 fprintf('Processed spectra: %d/%d.\n', ii, n_spec);
@@ -67,4 +65,17 @@ function [fps, mask] = loadFingerprints(raw_fps_dir, mat_fps_dir, spec_ids, verb
         fps = fps_struct.fps;
         mask = fps_struct.mask;
     end % if
+end % function
+
+function fps = loadSingleFingerprintVector_(fps_spec_fn)
+    fid = fopen(fps_spec_fn, 'r');
+    if fid == -1
+        error('loadFingerprints:NoSuchFileOrDirectory', 'Cannot open fps-file "%s".', ...
+            fps_spec_fn);
+    end % if
+    
+    % parse fingerprint vector 
+    fps = (fgetl(fid) - '0') == 1;
+    
+    fclose(fid);
 end % function

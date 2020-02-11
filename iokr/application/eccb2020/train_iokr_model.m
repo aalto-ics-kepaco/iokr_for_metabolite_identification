@@ -1,4 +1,4 @@
-function [ ] = train_iokr_model (inputDir, outputDir)
+function [param] = train_iokr_model (inputDir, outputDir)
 %======================================================
 % DESCRIPTION:
 % Script to train an IOKR model
@@ -36,7 +36,10 @@ function [ ] = train_iokr_model (inputDir, outputDir)
     param.ky_param.base_kernel     = 'tanimoto';
     param.ky_param.param_selection = 'entropy';
     
-    param.iokr_param.model_representation = 'Chol_decomp_of_C';
+    param.iokr_param.model_representation = 'only_C';
+    % param.iokr_param.mkl = 'alignf';
+    
+    % param.data_param.inputKernel = 'PPKr';
     
     param.debug_param.verbose = true;
     

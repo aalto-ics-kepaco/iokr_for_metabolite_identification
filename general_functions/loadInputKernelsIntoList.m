@@ -8,7 +8,7 @@ function [KX_list, param] = loadInputKernelsIntoList (inputDir, param, fileExten
         case param.data_param.availInputKernels
             disp (['Evaluation using a single kernel: ', param.data_param.inputKernel]);
 
-            KX_list = { loadKernel(strcat (inputDir, '/', upper (param.data_param.inputKernel), fileExtension)) };
+            KX_list = { loadKernel(strcat (inputDir, '/', param.data_param.inputKernel, fileExtension)) };
 
             % If a single kernel is used, than we force the "mkl" option to
             % be 'unimkl'. The weight for the kernel will be 1.

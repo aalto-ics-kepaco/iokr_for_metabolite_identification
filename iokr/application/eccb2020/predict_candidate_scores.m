@@ -78,7 +78,7 @@ function [ ] = predict_candidate_scores(inputDir, independentSet, fps_def, param
     % ---------------------------------------------------
     % Predict the candidate scores
     % ---------------------------------------------------
-    for idx = 1:5  %size(cmps)
+    for idx = 1:size(cmps)
         spec_id = cmps.Var1{idx};
         fprintf('Process "%s" (%d/%d)\n', spec_id, idx, size(cmps, 1))
         
@@ -141,7 +141,6 @@ function [ ] = predict_candidate_scores(inputDir, independentSet, fps_def, param
         % ------------------------------------------------------
         rows = fetch(db, sprintf("SELECT molecule FROM spectra WHERE name is '%s'", spec_id));
         ranks = tiedrank(- scores_test{1}');
-        disp(ranks);
         correct_idx = Y_Ci.findExampleInCandidateSet(1, rows{1, 1});
         fprintf('Rank of the correct structure (average): %d\n', ranks(correct_idx));
     end % for
